@@ -1,6 +1,6 @@
-# [Project name]
+# Tuko News
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+Tuko News is a live, image-led news reader for Kenya and the wider world with transparent publisher attribution and reader-friendly AI briefs.
 
 ## Run & Operate
 
@@ -22,23 +22,31 @@ _Replace the heading above with the project's name, and this line with one sente
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `artifacts/tuko-news/src/` — React reader shell, homepage, article view, and editorial components
+- `artifacts/api-server/src/routes/news.ts` — RSS aggregation, source metadata, two-minute cache, and optional Gemini summaries
+- `lib/api-spec/openapi.yaml` — source of truth for live news and summary contracts
+- `artifacts/tuko-news/src/index.css` — Tuko visual system, typography, motion, and responsive layout
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- Live stories are read from publisher RSS feeds server-side so the browser avoids cross-origin feed issues and every article retains a direct source URL.
+- The frontend polls the feed and trending rail every two minutes; the API keeps a short in-memory cache to avoid hammering publishers.
+- AI summaries are optional and use `GEMINI_API_KEY` only when provided; the UI falls back to a clearly labeled editorial brief rather than inventing content.
+- Missing or broken publisher images render an editorial media-unavailable state instead of unrelated or generated imagery.
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+Readers can browse live stories by section, search the edition, save stories locally, open readable article pages, share links, see trending coverage, and request a short AI-generated brief. Articles always show their original publisher and include a clear link to the full report.
 
 ## User preferences
 
-_Populate as you build — explicit user instructions worth remembering across sessions._
+- Use real publisher reporting and real article imagery only; never use fake stories or unrelated image placeholders.
+- Keep third-party attribution and original-source links clear rather than disguising the source.
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- The current OpenAPI generator targets Zod 3 syntax, so URL and integer schema formats should remain compatible with that generated validator.
+- RSS publishers can fail independently; the API intentionally returns the stories from feeds that are reachable.
 
 ## Pointers
 

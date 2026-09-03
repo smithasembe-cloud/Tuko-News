@@ -10,6 +10,8 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: news
+    description: Live news operations
 paths:
   /healthz:
     get:
@@ -24,6 +26,69 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /news:
+    get:
+      operationId: getNews
+      tags: [news]
+      summary: Get live news
+      description: Fetches fresh, attributed articles from configured RSS publishers.
+      parameters:
+        - name: category
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [all, kenya, world, business, sport, culture, technology]
+            default: all
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: number
+            minimum: 1
+            maximum: 40
+            default: 24
+      responses:
+        "200":
+          description: News feed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NewsFeed"
+  /news/trending:
+    get:
+      operationId: getTrendingNews
+      tags: [news]
+      summary: Get top stories
+      description: Returns a compact set of top stories for the homepage rail.
+      responses:
+        "200":
+          description: Trending stories
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/NewsArticle"
+  /news/summary:
+    post:
+      operationId: summarizeNews
+      tags: [news]
+      summary: Summarize a news article
+      description: Generates a short reader-friendly summary using Gemini when configured.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewsSummaryInput"
+      responses:
+        "200":
+          description: Generated summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NewsSummary"
 components:
   schemas:
     HealthStatus:
@@ -33,4 +98,44 @@ components:
           type: string
       required:
         - status
+    NewsArticle:
+      type: object
+      required: [id, title, excerpt, source, sourceUrl, publishedAt, category, imageUrl]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        excerpt: { type: string }
+        source: { type: string }
+        sourceUrl: { type: string }
+        publishedAt: { type: string }
+        category:
+          type: string
+          enum: [kenya, world, business, sport, culture, technology]
+        imageUrl: { type: ["string", "null"] }
+        author: { type: ["string", "null"] }
+        isFeatured: { type: boolean }
+        readingTime: { type: number }
+    NewsFeed:
+      type: object
+      required: [articles, refreshedAt, nextRefreshInSeconds]
+      properties:
+        articles:
+          type: array
+          items:
+            $ref: "#/components/schemas/NewsArticle"
+        refreshedAt: { type: string, format: date-time }
+        nextRefreshInSeconds: { type: number }
+    NewsSummaryInput:
+      type: object
+      required: [title, excerpt, source]
+      properties:
+        title: { type: string, minLength: 1 }
+        excerpt: { type: string, minLength: 1 }
+        source: { type: string, minLength: 1 }
+    NewsSummary:
+      type: object
+      required: [summary, generatedBy]
+      properties:
+        summary: { type: string }
+        generatedBy: { type: string }
 
