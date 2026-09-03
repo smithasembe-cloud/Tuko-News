@@ -1,4 +1,4 @@
-import { ArrowUpRight, Bookmark, Clock3 } from 'lucide-react';
+import { ArrowUpRight, Bookmark } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link } from 'wouter';
 import type { NewsArticle } from '@workspace/api-client-react';
@@ -58,7 +58,7 @@ export function StoryCard({ article, compact = false, index = 0 }: { article: Ne
   return (
     <article className={`story-card reveal reveal-${Math.min(index + 1, 4)} group relative overflow-hidden rounded-[1.1rem] border border-[hsl(var(--border))] bg-[hsl(var(--card))] ${compact ? 'flex gap-4 p-3' : ''}`} data-testid={`card-story-${article.id}`}>
       <Link href={`/article/${article.id}`} className={compact ? 'contents' : 'block'} data-testid={`link-story-${article.id}`}>
-        <div className={compact ? 'h-24 w-28 shrink-0 overflow-hidden rounded-lg' : 'aspect-[16/9] overflow-hidden'}>
+        <div className={compact ? 'h-24 w-28 shrink-0 overflow-hidden rounded-lg' : 'aspect-[4/3] overflow-hidden'}>
           <StoryImage article={article} />
         </div>
         <div className={compact ? 'min-w-0 py-0.5' : 'p-5'}>
@@ -66,7 +66,7 @@ export function StoryCard({ article, compact = false, index = 0 }: { article: Ne
           <h3 className={`mt-2 font-serif leading-[1.02] text-[hsl(var(--foreground))] transition-colors group-hover:text-[hsl(var(--primary))] ${compact ? 'line-clamp-3 text-[1.2rem]' : 'text-[1.6rem] sm:text-[1.8rem]'}`}>{article.title}</h3>
           {!compact && <p className="mt-3 line-clamp-2 text-sm leading-relaxed text-[hsl(var(--muted-foreground))]">{article.excerpt}</p>}
           <div className="mt-4 flex items-center justify-between text-[.68rem] text-[hsl(var(--muted-foreground))]">
-            <span className="flex items-center gap-1.5"><Clock3 size={13} /> {article.readingTime || 3} min read</span>
+            <span>Live report</span>
             <span className="flex items-center gap-1 font-semibold text-[hsl(var(--primary))]">Read <ArrowUpRight size={14} /></span>
           </div>
         </div>

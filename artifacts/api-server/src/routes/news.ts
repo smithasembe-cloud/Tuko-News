@@ -154,8 +154,16 @@ async function refreshArticles() {
         return true;
       })
         .sort((a, b) => Date.parse(b.publishedAt) - Date.parse(a.publishedAt));
-      feedCache = { articles: unique, refreshedAt: Date.now() };
-      return unique;
+      const availableImages = unique
+        .map((article) => article.imageUrl)
+        .filter((imageUrl): imageUrl is string => Boolean(imageUrl));
+      const fallbackImages = [...new Set(availableImages)].slice(0, 2);
+      const filled = unique.map((article, index) => ({
+        ...article,
+        imageUrl: article.imageUrl ?? (fallbackImages.length ? fallbackImages[index % fallbackImages.length] : null),
+      }));
+      feedCache = { articles: filled, refreshedAt: Date.now() };
+      return filled;
     })
     .finally(() => {
       refreshPromise = null;
