@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Tuko News"
+description = "A fast, visually rich news reader for Kenya and the world, with live RSS-powered stories, source attribution, two-minute refreshes, and Google Gemini-generated summaries."
+version = "1.0.0"
+id = "artifacts/tuko-news"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 21515
+
+[services.development]
+run = "pnpm --filter @workspace/tuko-news run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/tuko-news", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/tuko-news/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "21515"
+BASE_PATH = "/"
