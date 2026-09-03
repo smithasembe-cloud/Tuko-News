@@ -25,23 +25,34 @@ export default function Home() {
   const savedOnly = query.get('saved') === '1';
   const queryClient = useQueryClient();
   const [savedVersion, setSavedVersion] = useState(0);
-  const params = useMemo(() => ({ category: category || 'all', limit: 40 }) satisfies GetNewsParams, [category]);
+  const params = useMemo(() => ({ category: category || 'all', limit: 100 }) satisfies GetNewsParams, [category]);
   const feedQuery = useGetNews(params, {
-    query: { queryKey: getGetNewsQueryKey(params), refetchInterval: 120_000, refetchOnWindowFocus: true },
+    query: { queryKey: getGetNewsQueryKey(params), refetchInterval: 300_000, refetchOnWindowFocus: true },
   });
   const trendingQuery = useGetTrendingNews({
-    query: { queryKey: getGetTrendingNewsQueryKey(), refetchInterval: 120_000, refetchOnWindowFocus: true },
+    query: { queryKey: getGetTrendingNewsQueryKey(), refetchInterval: 300_000, refetchOnWindowFocus: true },
   });
   useEffect(() => {
     const update = () => setSavedVersion((version) => version + 1);
     window.addEventListener('tuko-saved-change', update);
     return () => window.removeEventListener('tuko-saved-change', update);
   }, []);
+  const [visibleCount, setVisibleCount] = useState(14);
   const feed = feedQuery.data;
   const filtered = useMemo(() => (feed?.articles || []).filter((article) => {
     const matchesSearch = !search || `${article.title} ${article.excerpt} ${article.source}`.toLowerCase().includes(search);
     return matchesSearch && (!savedOnly || isSaved(article.id));
   }), [feed, search, savedOnly, savedVersion]);
+  useEffect(() => setVisibleCount(14), [category, search, savedOnly]);
+  useEffect(() => {
+    const sentinel = document.querySelector('[data-testid="feed-sentinel"]');
+    if (!sentinel) return;
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) setVisibleCount((count) => Math.min(count + 12, filtered.length));
+    }, { rootMargin: '500px' });
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [filtered.length]);
   const featured = filtered.find((article) => article.isFeatured) || filtered[0];
   const rest = filtered.filter((article) => article.id !== featured?.id);
   const refresh = () => {
@@ -55,7 +66,7 @@ export default function Home() {
       <section className="tuko-container pb-12 pt-8 md:pb-20 md:pt-12">
         <div className="flex flex-col justify-between gap-4 border-b border-[hsl(var(--border))] pb-6 sm:flex-row sm:items-end">
           <div className="reveal"><p className="eyebrow text-[hsl(var(--primary))]">{new Intl.DateTimeFormat('en-KE', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(new Date())}</p><h1 className="mt-3 font-serif text-[clamp(3.3rem,8vw,7rem)] leading-[.82] tracking-[-.04em]">Stay curious<span className="text-[hsl(var(--primary))]">.</span></h1><p className="mt-5 max-w-md text-sm leading-relaxed text-[hsl(var(--muted-foreground))]">The stories moving Kenya and the wider world, selected for a sharper start to the day.</p></div>
-          <div className="reveal reveal-1 flex items-center gap-3 self-start sm:self-end"><div className="live-dot" /><div><p className="eyebrow text-[hsl(var(--primary))]">Live edition</p><p className="mt-1 text-xs text-[hsl(var(--muted-foreground))]">Updated {formatTime(feed.refreshedAt)} · Auto-refreshes in 2 min</p></div><button type="button" onClick={refresh} className="ml-3 rounded-full border border-[hsl(var(--border))] p-2.5 transition-colors hover:border-[hsl(var(--primary))] hover:text-[hsl(var(--primary))]" aria-label="Refresh news" data-testid="button-refresh-news"><RefreshCw size={16} /></button></div>
+          <div className="reveal reveal-1 flex items-center gap-3 self-start sm:self-end"><div className="live-dot" /><div><p className="eyebrow text-[hsl(var(--primary))]">Live edition</p><p className="mt-1 text-xs text-[hsl(var(--muted-foreground))]">Updated {formatTime(feed.refreshedAt)} · Refreshes every 5 min</p></div><button type="button" onClick={refresh} className="ml-3 rounded-full border border-[hsl(var(--border))] p-2.5 transition-colors hover:border-[hsl(var(--primary))] hover:text-[hsl(var(--primary))]" aria-label="Refresh news" data-testid="button-refresh-news"><RefreshCw size={16} /></button></div>
         </div>
         {search && <p className="mt-6 text-sm text-[hsl(var(--muted-foreground))]">Showing results for <strong className="text-[hsl(var(--foreground))]">“{search}”</strong></p>}
         {savedOnly && <p className="mt-6 flex items-center gap-2 text-sm text-[hsl(var(--muted-foreground))]"><Bookmark size={15} /> Your saved stories</p>}
@@ -66,7 +77,7 @@ export default function Home() {
               <div className="flex flex-col gap-5">{rest.slice(0, 2).map((article, index) => <StoryCard article={article} key={article.id} index={index + 1} />)}</div>
             </div>
             <div className="mt-14 grid gap-12 lg:grid-cols-[1fr_320px]">
-              <section><div className="mb-5 flex items-center justify-between border-b border-[hsl(var(--foreground))] pb-3"><h2 className="eyebrow">Latest from the desk</h2><span className="text-xs text-[hsl(var(--muted-foreground))]">{filtered.length} stories</span></div><div className="grid gap-5 sm:grid-cols-2">{rest.slice(2).map((article, index) => <StoryCard article={article} key={article.id} index={index % 4} />)}</div></section>
+              <section><div className="mb-5 flex items-center justify-between border-b border-[hsl(var(--foreground))] pb-3"><h2 className="eyebrow">Latest from the desk</h2><span className="text-xs text-[hsl(var(--muted-foreground))]">{filtered.length} live stories</span></div><div className="grid gap-5 sm:grid-cols-2">{rest.slice(2, visibleCount).map((article, index) => <StoryCard article={article} key={article.id} index={index % 4} />)}</div><div className="h-8" data-testid="feed-sentinel" aria-hidden="true" /></section>
               <aside><div className="mb-5 flex items-center gap-2 border-b border-[hsl(var(--foreground))] pb-3"><TrendingUp size={17} className="text-[hsl(var(--primary))]" /><h2 className="eyebrow">What readers are following</h2></div><div className="divide-y divide-[hsl(var(--border))]">{trendingQuery.isLoading ? [1, 2, 3].map((item) => <div key={item} className="skeleton my-4 h-20 rounded-lg" />) : (trendingQuery.data || []).slice(0, 5).map((article, index) => <Link href={`/article/${article.id}`} key={article.id} className="group flex gap-4 py-4" data-testid={`link-trending-${article.id}`}><span className="font-serif text-3xl leading-none text-[hsl(var(--primary)/.5)]">0{index + 1}</span><div><p className="text-sm font-semibold leading-snug transition-colors group-hover:text-[hsl(var(--primary))]">{article.title}</p><p className="mt-2 text-[.68rem] text-[hsl(var(--muted-foreground))]">{article.source} · {formatTime(article.publishedAt)}</p></div><ChevronRight size={15} className="ml-auto mt-1 shrink-0 text-[hsl(var(--muted-foreground))]" /></Link>)}</div></aside>
             </div>
           </>

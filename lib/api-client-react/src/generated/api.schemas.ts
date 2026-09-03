@@ -61,7 +61,7 @@ export type GetNewsParams = {
 category?: GetNewsCategory;
 /**
  * @minimum 1
- * @maximum 40
+ * @maximum 100
  */
 limit?: number;
 };

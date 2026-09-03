@@ -30,7 +30,7 @@ Tuko News is a live, image-led news reader for Kenya and the wider world with tr
 ## Architecture decisions
 
 - Live stories are read from publisher RSS feeds server-side so the browser avoids cross-origin feed issues and every article retains a direct source URL.
-- The frontend polls the feed and trending rail every two minutes; the API keeps a short in-memory cache to avoid hammering publishers.
+- The frontend polls the feed and trending rail every five minutes; the API keeps a short in-memory cache to avoid hammering publishers.
 - AI summaries are optional and use `GEMINI_API_KEY` only when provided; the UI falls back to a clearly labeled editorial brief rather than inventing content.
 - Missing or broken publisher images render an editorial media-unavailable state instead of unrelated or generated imagery.
 

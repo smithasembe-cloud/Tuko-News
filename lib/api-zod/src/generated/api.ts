@@ -22,8 +22,8 @@ export const HealthCheckResponse = zod.object({
  * @summary Get live news
  */
 export const getNewsQueryCategoryDefault = `all`;
-export const getNewsQueryLimitDefault = 24;
-export const getNewsQueryLimitMax = 40;
+export const getNewsQueryLimitDefault = 60;
+export const getNewsQueryLimitMax = 100;
 
 
 

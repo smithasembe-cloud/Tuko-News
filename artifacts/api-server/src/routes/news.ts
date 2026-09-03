@@ -38,12 +38,16 @@ type CachedFeed = {
 const FEEDS: FeedDefinition[] = [
   { url: "https://feeds.bbci.co.uk/news/world/africa/rss.xml", source: "BBC Africa", category: "kenya" },
   { url: "https://feeds.bbci.co.uk/news/rss.xml", source: "BBC News", category: "world" },
+  { url: "https://feeds.bbci.co.uk/news/business/rss.xml", source: "BBC Business", category: "business" },
+  { url: "https://feeds.bbci.co.uk/sport/rss.xml", source: "BBC Sport", category: "sport" },
+  { url: "https://feeds.bbci.co.uk/news/technology/rss.xml", source: "BBC Technology", category: "technology" },
   { url: "https://www.aljazeera.com/xml/rss/all.xml", source: "Al Jazeera", category: "world" },
   { url: "https://techcrunch.com/feed/", source: "TechCrunch", category: "technology" },
   { url: "https://www.espn.com/espn/rss/news", source: "ESPN", category: "sport" },
 ];
 
-const CACHE_TTL_MS = 90_000;
+const CACHE_TTL_MS = 240_000;
+const REFRESH_INTERVAL_MS = 300_000;
 let feedCache: CachedFeed | null = null;
 let refreshPromise: Promise<NewsArticle[]> | null = null;
 
@@ -101,7 +105,7 @@ function inferCategory(title: string, excerpt: string, fallback: NewsCategory): 
 
 function parseFeed(xml: string, feed: FeedDefinition): NewsArticle[] {
   const blocks = [...xml.matchAll(/<(item|entry)\b[\s\S]*?<\/\1>/gi)].map((match) => match[0]);
-  return blocks.slice(0, 18).flatMap((block) => {
+  return blocks.slice(0, 30).flatMap((block) => {
     const title = stripMarkup(firstTag(block, "title"));
     const sourceUrl = firstTag(block, "link") || firstAttribute(block, "link", "href");
     const description = stripMarkup(firstTag(block, "description") || firstTag(block, "summary") || firstTag(block, "content"));
@@ -140,7 +144,15 @@ async function refreshArticles() {
   refreshPromise = Promise.allSettled(FEEDS.map(fetchFeed))
     .then((results) => results.flatMap((result) => result.status === "fulfilled" ? result.value : []))
     .then((articles) => {
-      const unique = [...new Map(articles.map((article) => [article.id, article])).values()]
+      const seenUrls = new Set<string>();
+      const seenTitles = new Set<string>();
+      const unique = articles.filter((article) => {
+        const titleKey = article.title.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim().split(" ").slice(0, 12).join(" ");
+        if (seenUrls.has(article.sourceUrl) || seenTitles.has(titleKey)) return false;
+        seenUrls.add(article.sourceUrl);
+        seenTitles.add(titleKey);
+        return true;
+      })
         .sort((a, b) => Date.parse(b.publishedAt) - Date.parse(a.publishedAt));
       feedCache = { articles: unique, refreshedAt: Date.now() };
       return unique;
@@ -202,7 +214,7 @@ router.get("/news", async (req, res) => {
     const payload = {
       articles: filtered.slice(0, params.limit),
       refreshedAt: new Date(feedCache?.refreshedAt ?? Date.now()).toISOString(),
-      nextRefreshInSeconds: Math.max(0, Math.ceil(((feedCache?.refreshedAt ?? Date.now()) + 120_000 - Date.now()) / 1000)),
+      nextRefreshInSeconds: Math.max(0, Math.ceil(((feedCache?.refreshedAt ?? Date.now()) + REFRESH_INTERVAL_MS - Date.now()) / 1000)),
     };
     res.json(GetNewsResponse.parse(payload));
   } catch (error) {
