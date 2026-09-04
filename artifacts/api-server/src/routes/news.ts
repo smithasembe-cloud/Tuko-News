@@ -36,7 +36,11 @@ type CachedFeed = {
 };
 
 const FEEDS: FeedDefinition[] = [
-  { url: "https://feeds.bbci.co.uk/news/world/africa/rss.xml", source: "BBC Africa", category: "kenya" },
+  { url: "https://www.capitalfm.co.ke/news/feed/", source: "Capital FM Kenya", category: "kenya" },
+  { url: "https://www.kbc.co.ke/feed/", source: "KBC Kenya", category: "kenya" },
+  { url: "https://www.standardmedia.co.ke/rss/headlines.php", source: "The Standard Kenya", category: "kenya" },
+  { url: "https://nation.africa/kenya/rss.xml", source: "Nation Africa", category: "kenya" },
+  { url: "https://feeds.bbci.co.uk/news/world/africa/rss.xml", source: "BBC Africa", category: "world" },
   { url: "https://feeds.bbci.co.uk/news/rss.xml", source: "BBC News", category: "world" },
   { url: "https://feeds.bbci.co.uk/news/business/rss.xml", source: "BBC Business", category: "business" },
   { url: "https://feeds.bbci.co.uk/sport/rss.xml", source: "BBC Sport", category: "sport" },
@@ -95,7 +99,7 @@ function extractImage(block: string) {
 
 function inferCategory(title: string, excerpt: string, fallback: NewsCategory): NewsCategory {
   const text = `${title} ${excerpt}`.toLowerCase();
-  if (/\b(kenya|nairobi|mombasa|kisumu|ruto|kenyan|africa)\b/.test(text)) return "kenya";
+  if (/\b(kenya|nairobi|mombasa|kisumu|nakuru|eldoret|ruto|kenyan|mpesa|m-pesa)\b/.test(text)) return "kenya";
   if (/\b(stock|market|business|economy|trade|company|finance|bank)\b/.test(text)) return "business";
   if (/\b(football|soccer|sport|cricket|rugby|tennis|olympic|league)\b/.test(text)) return "sport";
   if (/\b(film|music|art|culture|book|fashion|celebrity)\b/.test(text)) return "culture";
@@ -143,7 +147,7 @@ async function refreshArticles() {
   if (refreshPromise) return refreshPromise;
   refreshPromise = Promise.allSettled(FEEDS.map(fetchFeed))
     .then((results) => results.flatMap((result) => result.status === "fulfilled" ? result.value : []))
-    .then((articles) => {
+    .then(async (articles) => {
       const seenUrls = new Set<string>();
       const seenTitles = new Set<string>();
       const unique = articles.filter((article) => {
@@ -162,13 +166,79 @@ async function refreshArticles() {
         ...article,
         imageUrl: article.imageUrl ?? (fallbackImages.length ? fallbackImages[index % fallbackImages.length] : null),
       }));
-      feedCache = { articles: filled, refreshedAt: Date.now() };
-      return filled;
+      const curated = await curateArticles(filled);
+      feedCache = { articles: curated, refreshedAt: Date.now() };
+      return curated;
     })
     .finally(() => {
       refreshPromise = null;
     });
   return refreshPromise;
+}
+
+function deterministicNewsOrder(articles: NewsArticle[]) {
+  return [...articles].sort((a, b) => {
+    const kenyaPriority = Number(b.category === "kenya") - Number(a.category === "kenya");
+    if (kenyaPriority) return kenyaPriority;
+    return Date.parse(b.publishedAt) - Date.parse(a.publishedAt);
+  });
+}
+
+async function curateArticles(articles: NewsArticle[]) {
+  const fallback = deterministicNewsOrder(articles);
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey || articles.length < 2) return fallback;
+
+  const candidateData = articles.map((article) => ({
+    id: article.id,
+    title: article.title,
+    excerpt: article.excerpt,
+    source: article.source,
+    category: article.category,
+    publishedAt: article.publishedAt,
+  }));
+  const prompt = [
+    "You are the Tuko News editorial desk. Curate the supplied real RSS items; do not write, rewrite, or invent any news.",
+    "Return JSON only in exactly this shape: {\"orderedIds\":[\"id-1\",\"id-2\"]}.",
+    "Use only IDs from the supplied list, include each ID at most once, and include every ID.",
+    "Put genuinely Kenyan stories first, then other East African stories, then the wider world.",
+    "Within each group, prefer the newest items and the strongest mix of politics, public life, business, sport, culture, and technology.",
+    "When two items report the same event or are near-duplicate headlines, keep the clearer/newer item first and put the other later.",
+    "Never add facts, sources, URLs, headlines, or IDs that are not supplied.",
+    JSON.stringify(candidateData),
+  ].join("\n");
+
+  try {
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(apiKey)}`,
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { responseMimeType: "application/json", temperature: 0.1 },
+        }),
+        signal: AbortSignal.timeout(12_000),
+      },
+    );
+    if (!response.ok) throw new Error(`Gemini curation returned ${response.status}`);
+    const body = await response.json() as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }> };
+    const text = body.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+    const parsed = text ? JSON.parse(text) as { orderedIds?: unknown } : null;
+    const orderedIds = Array.isArray(parsed?.orderedIds)
+      ? parsed.orderedIds.filter((id): id is string => typeof id === "string")
+      : [];
+    const byId = new Map(articles.map((article) => [article.id, article]));
+    const ordered = [...new Set(orderedIds)].flatMap((id) => {
+      const article = byId.get(id);
+      return article ? [article] : [];
+    });
+    const selected = new Set(ordered.map((article) => article.id));
+    return [...ordered, ...fallback.filter((article) => !selected.has(article.id))];
+  } catch (error) {
+    console.warn("AI curation unavailable; using deterministic Kenya-first ordering", error);
+    return fallback;
+  }
 }
 
 async function getArticles() {
