@@ -40,6 +40,7 @@ const FEEDS: FeedDefinition[] = [
   { url: "https://www.kbc.co.ke/feed/", source: "KBC Kenya", category: "kenya" },
   { url: "https://www.standardmedia.co.ke/rss/headlines.php", source: "The Standard Kenya", category: "kenya" },
   { url: "https://nation.africa/kenya/rss.xml", source: "Nation Africa", category: "kenya" },
+  { url: "https://www.citizen.digital/feed.xml", source: "Citizen Digital", category: "kenya" },
   { url: "https://feeds.bbci.co.uk/news/world/africa/rss.xml", source: "BBC Africa", category: "world" },
   { url: "https://feeds.bbci.co.uk/news/rss.xml", source: "BBC News", category: "world" },
   { url: "https://feeds.bbci.co.uk/news/business/rss.xml", source: "BBC Business", category: "business" },

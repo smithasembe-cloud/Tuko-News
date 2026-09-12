@@ -30,7 +30,7 @@ export function TukoShell({ children }: { children: React.ReactNode }) {
       <header className="tuko-header sticky top-0 z-40">
         <div className="tuko-container flex h-[70px] items-center justify-between gap-4">
           <Link href="/" className="brand-mark text-[2rem] text-[hsl(var(--foreground))]" data-testid="link-home">
-            tuko<em>.</em>
+            Tuko News Reader
           </Link>
           <div className="hidden items-center gap-2 md:flex">
             <span className="live-dot" aria-hidden="true" />
@@ -75,7 +75,7 @@ export function TukoShell({ children }: { children: React.ReactNode }) {
       <footer className="mt-24 border-t border-[hsl(var(--border))] bg-[hsl(var(--secondary))] text-[hsl(var(--secondary-foreground))]">
         <div className="tuko-container flex flex-col gap-8 py-10 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <div className="brand-mark text-4xl">tuko<em>.</em></div>
+            <div className="brand-mark text-4xl">Tuko News Reader</div>
             <p className="mt-3 max-w-xs text-sm text-[hsl(var(--secondary-foreground)/.68)]">The morning read for Kenya, the continent, and a curious world.</p>
           </div>
           <div className="text-right">

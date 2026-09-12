@@ -1,6 +1,6 @@
-# Tuko News
+# Tuko News Reader
 
-Tuko News is a live, image-led news reader for Kenya and the wider world with transparent publisher attribution and reader-friendly AI briefs.
+Tuko News Reader is a live, image-led news reader for Kenya and the wider world with transparent publisher attribution and reader-friendly AI briefs.
 
 ## Run & Operate
 
@@ -23,7 +23,7 @@ Tuko News is a live, image-led news reader for Kenya and the wider world with tr
 ## Where things live
 
 - `artifacts/tuko-news/src/` — React reader shell, homepage, article view, and editorial components
-- `artifacts/api-server/src/routes/news.ts` — RSS aggregation, source metadata, two-minute cache, and optional Gemini summaries
+- `artifacts/api-server/src/routes/news.ts` — RSS aggregation, source metadata, Kenya-first AI curation, four-minute cache, and optional Gemini summaries
 - `lib/api-spec/openapi.yaml` — source of truth for live news and summary contracts
 - `artifacts/tuko-news/src/index.css` — Tuko visual system, typography, motion, and responsive layout
 
@@ -31,8 +31,8 @@ Tuko News is a live, image-led news reader for Kenya and the wider world with tr
 
 - Live stories are read from publisher RSS feeds server-side so the browser avoids cross-origin feed issues and every article retains a direct source URL.
 - The frontend polls the feed and trending rail every five minutes; the API keeps a short in-memory cache to avoid hammering publishers.
-- AI summaries are optional and use `GEMINI_API_KEY` only when provided; the UI falls back to a clearly labeled editorial brief rather than inventing content.
-- Missing or broken publisher images render an editorial media-unavailable state instead of unrelated or generated imagery.
+- AI curation and summaries use `GEMINI_API_KEY` only when provided; deterministic ordering and a clearly labeled editorial brief keep the reader experience working without inventing content.
+- Missing publisher images use a real image already present in the live edition so story cards remain filled without generated imagery.
 
 ## Product
 
