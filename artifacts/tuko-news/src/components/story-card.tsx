@@ -1,4 +1,4 @@
-import { ArrowUpRight, Bookmark } from 'lucide-react';
+import { ArrowUpRight, Bookmark, Play } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link } from 'wouter';
 import type { NewsArticle } from '@workspace/api-client-react';
@@ -58,8 +58,9 @@ export function StoryCard({ article, compact = false, index = 0 }: { article: Ne
   return (
     <article className={`story-card reveal reveal-${Math.min(index + 1, 4)} group relative overflow-hidden rounded-[1.1rem] border border-[hsl(var(--border))] bg-[hsl(var(--card))] ${compact ? 'flex gap-4 p-3' : ''}`} data-testid={`card-story-${article.id}`}>
       <Link href={`/article/${article.id}`} className={compact ? 'contents' : 'block'} data-testid={`link-story-${article.id}`}>
-        <div className={compact ? 'h-24 w-28 shrink-0 overflow-hidden rounded-lg' : 'aspect-[4/3] overflow-hidden'}>
+        <div className={compact ? 'h-24 w-28 shrink-0 overflow-hidden rounded-lg' : 'relative aspect-[4/3] overflow-hidden'}>
           <StoryImage article={article} />
+          {article.videoUrl && <span className="video-badge absolute bottom-3 left-3 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-[.65rem] font-bold"><Play size={11} fill="currentColor" /> Video</span>}
         </div>
         <div className={compact ? 'min-w-0 py-0.5' : 'p-5'}>
           <StoryMeta article={article} />

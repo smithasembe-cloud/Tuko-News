@@ -18,6 +18,8 @@ export interface NewsArticle {
   /** @nullable */
   imageUrl: string | null;
   /** @nullable */
+  videoUrl: string | null;
+  /** @nullable */
   author?: string | null;
   isFeatured?: boolean;
   readingTime?: number;

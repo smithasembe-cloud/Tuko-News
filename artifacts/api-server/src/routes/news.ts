@@ -7,6 +7,8 @@ import {
   SummarizeNewsBody,
   SummarizeNewsResponse,
 } from "@workspace/api-zod";
+import { desc, eq } from "drizzle-orm";
+import { db, newsArticlesTable, type NewsArticleRecord } from "@workspace/db";
 
 type NewsCategory = "kenya" | "world" | "business" | "sport" | "culture" | "technology";
 
@@ -19,6 +21,7 @@ type NewsArticle = {
   publishedAt: string;
   category: NewsCategory;
   imageUrl: string | null;
+  videoUrl: string | null;
   author?: string | null;
   isFeatured?: boolean;
   readingTime?: number;
@@ -51,10 +54,10 @@ const FEEDS: FeedDefinition[] = [
   { url: "https://www.espn.com/espn/rss/news", source: "ESPN", category: "sport" },
 ];
 
-const CACHE_TTL_MS = 240_000;
-const REFRESH_INTERVAL_MS = 300_000;
+const EDITION_INTERVAL_MS = 3_600_000;
 let feedCache: CachedFeed | null = null;
 let refreshPromise: Promise<NewsArticle[]> | null = null;
+let refreshTimer: NodeJS.Timeout | null = null;
 
 function decodeXml(value: string) {
   return value
@@ -98,6 +101,18 @@ function extractImage(block: string) {
   return candidates.find((candidate) => /^https?:\/\//i.test(candidate)) ?? null;
 }
 
+function extractVideo(block: string) {
+  const videoTag = block.match(/<(?:media:content|enclosure|video|source)\b[^>]*(?:type=["'][^"']*video[^"']*["']|url=["'][^"']+\.(?:mp4|webm|m3u8)(?:\?[^"']*)?["']|src=["'][^"']+\.(?:mp4|webm|m3u8)(?:\?[^"']*)?["'])[^>]*>/i)?.[0] ?? "";
+  const candidates = [
+    firstAttribute(videoTag, "media:content", "url"),
+    firstAttribute(videoTag, "enclosure", "url"),
+    firstAttribute(videoTag, "video", "src"),
+    firstAttribute(videoTag, "source", "src"),
+    videoTag.match(/\b(?:url|src)=["']([^"']+)["']/i)?.[1] ?? "",
+  ];
+  return candidates.find((candidate) => /^https?:\/\//i.test(candidate)) ?? null;
+}
+
 function inferCategory(title: string, excerpt: string, fallback: NewsCategory): NewsCategory {
   const text = `${title} ${excerpt}`.toLowerCase();
   if (/\b(kenya|nairobi|mombasa|kisumu|nakuru|eldoret|ruto|kenyan|mpesa|m-pesa)\b/.test(text)) return "kenya";
@@ -129,6 +144,7 @@ function parseFeed(xml: string, feed: FeedDefinition): NewsArticle[] {
       publishedAt: Number.isNaN(timestamp) ? new Date().toISOString() : new Date(timestamp).toISOString(),
       category,
       imageUrl: extractImage(block),
+      videoUrl: extractVideo(block),
       author: stripMarkup(firstTag(block, "dc:creator") || firstTag(block, "author")) || null,
       readingTime: Math.max(2, Math.min(9, Math.round((title.length + excerpt.length) / 140))),
     }];
@@ -168,13 +184,70 @@ async function refreshArticles() {
         imageUrl: article.imageUrl ?? (fallbackImages.length ? fallbackImages[index % fallbackImages.length] : null),
       }));
       const curated = await curateArticles(filled);
-      feedCache = { articles: curated, refreshedAt: Date.now() };
+      const editionStartedAt = Date.now();
+      await replaceStoredEdition(curated, editionStartedAt);
+      feedCache = { articles: curated, refreshedAt: editionStartedAt };
       return curated;
     })
     .finally(() => {
       refreshPromise = null;
     });
   return refreshPromise;
+}
+
+function recordToArticle(record: NewsArticleRecord): NewsArticle {
+  return {
+    id: record.id,
+    title: record.title,
+    excerpt: record.excerpt,
+    source: record.source,
+    sourceUrl: record.sourceUrl,
+    publishedAt: record.publishedAt.toISOString(),
+    category: record.category as NewsCategory,
+    imageUrl: record.imageUrl,
+    videoUrl: record.videoUrl,
+    author: record.author,
+    isFeatured: record.isFeatured,
+    readingTime: record.readingTime ?? undefined,
+  };
+}
+
+async function loadStoredEdition(): Promise<CachedFeed | null> {
+  const [latest] = await db
+    .select({ editionStartedAt: newsArticlesTable.editionStartedAt })
+    .from(newsArticlesTable)
+    .orderBy(desc(newsArticlesTable.editionStartedAt))
+    .limit(1);
+  if (!latest || Date.now() - latest.editionStartedAt.getTime() >= EDITION_INTERVAL_MS) return null;
+  const records = await db
+    .select()
+    .from(newsArticlesTable)
+    .where(eq(newsArticlesTable.editionStartedAt, latest.editionStartedAt))
+    .orderBy(desc(newsArticlesTable.publishedAt));
+  return { articles: records.map(recordToArticle), refreshedAt: latest.editionStartedAt.getTime() };
+}
+
+async function replaceStoredEdition(articles: NewsArticle[], editionStartedAt: number) {
+  const editionDate = new Date(editionStartedAt);
+  await db.transaction(async (tx) => {
+    await tx.delete(newsArticlesTable);
+    if (articles.length === 0) return;
+    await tx.insert(newsArticlesTable).values(articles.map((article) => ({
+      id: article.id,
+      title: article.title,
+      excerpt: article.excerpt,
+      source: article.source,
+      sourceUrl: article.sourceUrl,
+      publishedAt: new Date(article.publishedAt),
+      category: article.category,
+      imageUrl: article.imageUrl,
+      videoUrl: article.videoUrl,
+      author: article.author ?? null,
+      isFeatured: article.isFeatured ?? false,
+      readingTime: article.readingTime ?? null,
+      editionStartedAt: editionDate,
+    })));
+  });
 }
 
 function deterministicNewsOrder(articles: NewsArticle[]) {
@@ -199,7 +272,7 @@ async function curateArticles(articles: NewsArticle[]) {
     publishedAt: article.publishedAt,
   }));
   const prompt = [
-    "You are the Tuko News editorial desk. Curate the supplied real RSS items; do not write, rewrite, or invent any news.",
+    "You are the GEN 5minutes News editorial desk. Curate the supplied real RSS items; do not write, rewrite, or invent any news.",
     "Return JSON only in exactly this shape: {\"orderedIds\":[\"id-1\",\"id-2\"]}.",
     "Use only IDs from the supplied list, include each ID at most once, and include every ID.",
     "Put genuinely Kenyan stories first, then other East African stories, then the wider world.",
@@ -243,7 +316,12 @@ async function curateArticles(articles: NewsArticle[]) {
 }
 
 async function getArticles() {
-  if (feedCache && Date.now() - feedCache.refreshedAt < CACHE_TTL_MS) return feedCache.articles;
+  if (feedCache && Date.now() - feedCache.refreshedAt < EDITION_INTERVAL_MS) return feedCache.articles;
+  const storedEdition = await loadStoredEdition();
+  if (storedEdition) {
+    feedCache = storedEdition;
+    return storedEdition.articles;
+  }
   return refreshArticles();
 }
 
@@ -255,7 +333,7 @@ async function generateSummary(title: string, excerpt: string, source: string) {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) return {
     summary: `${excerpt} Read the full report from ${source} for the latest verified details.`,
-    generatedBy: "Tuko editorial summary",
+    generatedBy: "GEN 5minutes News editorial summary",
   };
 
   const prompt = [
@@ -293,7 +371,7 @@ router.get("/news", async (req, res) => {
     const payload = {
       articles: filtered.slice(0, params.limit),
       refreshedAt: new Date(feedCache?.refreshedAt ?? Date.now()).toISOString(),
-      nextRefreshInSeconds: Math.max(0, Math.ceil(((feedCache?.refreshedAt ?? Date.now()) + REFRESH_INTERVAL_MS - Date.now()) / 1000)),
+      nextRefreshInSeconds: Math.max(0, Math.ceil(((feedCache?.refreshedAt ?? Date.now()) + EDITION_INTERVAL_MS - Date.now()) / 1000)),
     };
     res.json(GetNewsResponse.parse(payload));
   } catch (error) {
@@ -324,3 +402,21 @@ router.post("/news/summary", async (req, res) => {
 });
 
 export default router;
+
+async function startNewsEditionScheduler() {
+  try {
+    const storedEdition = await loadStoredEdition();
+    if (storedEdition) feedCache = storedEdition;
+    else await refreshArticles();
+  } catch (error) {
+    console.error("Unable to initialize news edition", error);
+  }
+  if (!refreshTimer) {
+    refreshTimer = setInterval(() => {
+      void refreshArticles().catch((error) => console.error("Unable to refresh news edition", error));
+    }, EDITION_INTERVAL_MS);
+    refreshTimer.unref?.();
+  }
+}
+
+void startNewsEditionScheduler();

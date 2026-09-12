@@ -1,6 +1,6 @@
-# Tuko News Reader
+# GEN 5minutes News
 
-Tuko News Reader is a live, image-led news reader for Kenya and the wider world with transparent publisher attribution and reader-friendly AI briefs.
+GEN 5minutes News is a live, image-led news reader for Kenya and the wider world with transparent publisher attribution and reader-friendly AI briefs.
 
 ## Run & Operate
 
@@ -23,16 +23,17 @@ Tuko News Reader is a live, image-led news reader for Kenya and the wider world 
 ## Where things live
 
 - `artifacts/tuko-news/src/` — React reader shell, homepage, article view, and editorial components
-- `artifacts/api-server/src/routes/news.ts` — RSS aggregation, source metadata, Kenya-first AI curation, four-minute cache, and optional Gemini summaries
+- `artifacts/api-server/src/routes/news.ts` — RSS aggregation, source metadata, Kenya-first AI curation, hourly edition storage, and optional Gemini summaries
 - `lib/api-spec/openapi.yaml` — source of truth for live news and summary contracts
-- `artifacts/tuko-news/src/index.css` — Tuko visual system, typography, motion, and responsive layout
+- `artifacts/tuko-news/src/index.css` — GEN visual system, typography, motion, and responsive layout
 
 ## Architecture decisions
 
 - Live stories are read from publisher RSS feeds server-side so the browser avoids cross-origin feed issues and every article retains a direct source URL.
-- The frontend polls the feed and trending rail every five minutes; the API keeps a short in-memory cache to avoid hammering publishers.
+- The API creates one edition per hour, stores it in PostgreSQL, and removes the previous edition only after the replacement feed has been fetched and curated. The frontend polls on the same hourly cadence.
 - AI curation and summaries use `GEMINI_API_KEY` only when provided; deterministic ordering and a clearly labeled editorial brief keep the reader experience working without inventing content.
 - Missing publisher images use a real image already present in the live edition so story cards remain filled without generated imagery.
+- Publisher video URLs are preserved when feeds provide them and rendered in a native player on the article page.
 
 ## Product
 

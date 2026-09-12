@@ -100,7 +100,7 @@ components:
         - status
     NewsArticle:
       type: object
-      required: [id, title, excerpt, source, sourceUrl, publishedAt, category, imageUrl]
+      required: [id, title, excerpt, source, sourceUrl, publishedAt, category, imageUrl, videoUrl]
       properties:
         id: { type: string }
         title: { type: string }
@@ -112,6 +112,7 @@ components:
           type: string
           enum: [kenya, world, business, sport, culture, technology]
         imageUrl: { type: ["string", "null"] }
+        videoUrl: { type: ["string", "null"] }
         author: { type: ["string", "null"] }
         isFeatured: { type: boolean }
         readingTime: { type: number }

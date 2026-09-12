@@ -42,6 +42,7 @@ export const GetNewsResponse = zod.object({
   "publishedAt": zod.string(),
   "category": zod.enum(['kenya', 'world', 'business', 'sport', 'culture', 'technology']),
   "imageUrl": zod.string().nullable(),
+  "videoUrl": zod.string().nullable(),
   "author": zod.string().nullish(),
   "isFeatured": zod.boolean().optional(),
   "readingTime": zod.number().optional()
@@ -64,6 +65,7 @@ export const GetTrendingNewsResponseItem = zod.object({
   "publishedAt": zod.string(),
   "category": zod.enum(['kenya', 'world', 'business', 'sport', 'culture', 'technology']),
   "imageUrl": zod.string().nullable(),
+  "videoUrl": zod.string().nullable(),
   "author": zod.string().nullish(),
   "isFeatured": zod.boolean().optional(),
   "readingTime": zod.number().optional()

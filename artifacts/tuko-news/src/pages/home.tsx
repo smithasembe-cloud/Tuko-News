@@ -27,10 +27,10 @@ export default function Home() {
   const [savedVersion, setSavedVersion] = useState(0);
   const params = useMemo(() => ({ category: category || 'all', limit: 100 }) satisfies GetNewsParams, [category]);
   const feedQuery = useGetNews(params, {
-    query: { queryKey: getGetNewsQueryKey(params), refetchInterval: 300_000, refetchOnWindowFocus: true },
+    query: { queryKey: getGetNewsQueryKey(params), refetchInterval: 3_600_000, refetchOnWindowFocus: true },
   });
   const trendingQuery = useGetTrendingNews({
-    query: { queryKey: getGetTrendingNewsQueryKey(), refetchInterval: 300_000, refetchOnWindowFocus: true },
+    query: { queryKey: getGetTrendingNewsQueryKey(), refetchInterval: 3_600_000, refetchOnWindowFocus: true },
   });
   useEffect(() => {
     const update = () => setSavedVersion((version) => version + 1);
@@ -66,7 +66,7 @@ export default function Home() {
       <section className="tuko-container pb-12 pt-8 md:pb-20 md:pt-12">
         <div className="flex flex-col justify-between gap-4 border-b border-[hsl(var(--border))] pb-6 sm:flex-row sm:items-end">
           <div className="reveal"><p className="eyebrow text-[hsl(var(--primary))]">{new Intl.DateTimeFormat('en-KE', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(new Date())}</p><h1 className="mt-3 font-serif text-[clamp(3.3rem,8vw,7rem)] leading-[.82] tracking-[-.04em]">Stay curious<span className="text-[hsl(var(--primary))]">.</span></h1><p className="mt-5 max-w-md text-sm leading-relaxed text-[hsl(var(--muted-foreground))]">The stories moving Kenya and the wider world, selected for a sharper start to the day.</p></div>
-          <div className="reveal reveal-1 flex items-center gap-3 self-start sm:self-end"><div className="live-dot" /><div><p className="eyebrow text-[hsl(var(--primary))]">Live edition</p><p className="mt-1 text-xs text-[hsl(var(--muted-foreground))]">Updated {formatTime(feed.refreshedAt)} · Refreshes every 5 min</p></div><button type="button" onClick={refresh} className="ml-3 rounded-full border border-[hsl(var(--border))] p-2.5 transition-colors hover:border-[hsl(var(--primary))] hover:text-[hsl(var(--primary))]" aria-label="Refresh news" data-testid="button-refresh-news"><RefreshCw size={16} /></button></div>
+          <div className="reveal reveal-1 flex items-center gap-3 self-start sm:self-end"><div className="live-dot" /><div><p className="eyebrow text-[hsl(var(--primary))]">Live edition</p><p className="mt-1 text-xs text-[hsl(var(--muted-foreground))]">Updated {formatTime(feed.refreshedAt)} · New edition every hour</p></div><button type="button" onClick={refresh} className="ml-3 rounded-full border border-[hsl(var(--border))] p-2.5 transition-colors hover:border-[hsl(var(--primary))] hover:text-[hsl(var(--primary))]" aria-label="Refresh news" data-testid="button-refresh-news"><RefreshCw size={16} /></button></div>
         </div>
         {search && <p className="mt-6 text-sm text-[hsl(var(--muted-foreground))]">Showing results for <strong className="text-[hsl(var(--foreground))]">“{search}”</strong></p>}
         {savedOnly && <p className="mt-6 flex items-center gap-2 text-sm text-[hsl(var(--muted-foreground))]"><Bookmark size={15} /> Your saved stories</p>}
@@ -83,7 +83,7 @@ export default function Home() {
           </>
         )}
       </section>
-      <div className="overflow-hidden border-y border-[hsl(var(--border))] bg-[hsl(var(--accent))] py-2.5 text-[hsl(var(--accent-foreground))]"><div className="ticker-track flex w-max gap-8 whitespace-nowrap"><span className="eyebrow">Tuko morning briefing</span><ArrowDown size={13} /><span className="eyebrow">Read beyond the headline</span><span className="opacity-50">◆</span><span className="eyebrow">Tuko morning briefing</span><ArrowDown size={13} /><span className="eyebrow">Read beyond the headline</span><span className="opacity-50">◆</span></div></div>
+      <div className="overflow-hidden border-y border-[hsl(var(--border))] bg-[hsl(var(--accent))] py-2.5 text-[hsl(var(--accent-foreground))]"><div className="ticker-track flex w-max gap-8 whitespace-nowrap"><span className="eyebrow">GEN 5minutes briefing</span><ArrowDown size={13} /><span className="eyebrow">Read beyond the headline</span><span className="opacity-50">◆</span><span className="eyebrow">GEN 5minutes briefing</span><ArrowDown size={13} /><span className="eyebrow">Read beyond the headline</span><span className="opacity-50">◆</span></div></div>
     </main>
   );
 }
