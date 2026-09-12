@@ -55,6 +55,7 @@ const FEEDS: FeedDefinition[] = [
 ];
 
 const EDITION_INTERVAL_MS = 3_600_000;
+const CURRENT_EDITION_VERSION = 2;
 let feedCache: CachedFeed | null = null;
 let refreshPromise: Promise<NewsArticle[]> | null = null;
 let refreshTimer: NodeJS.Timeout | null = null;
@@ -113,6 +114,17 @@ function extractVideo(block: string) {
   return candidates.find((candidate) => /^https?:\/\//i.test(candidate)) ?? null;
 }
 
+function extractMetaContent(html: string, names: string[]) {
+  const tags = html.match(/<meta\b[^>]*>/gi) ?? [];
+  for (const tag of tags) {
+    const name = tag.match(/\b(?:property|name)=["']([^"']+)["']/i)?.[1]?.toLowerCase();
+    if (!name || !names.includes(name)) continue;
+    const content = tag.match(/\bcontent=["']([^"']+)["']/i)?.[1] ?? "";
+    if (/^https?:\/\//i.test(content)) return decodeXml(content);
+  }
+  return null;
+}
+
 function inferCategory(title: string, excerpt: string, fallback: NewsCategory): NewsCategory {
   const text = `${title} ${excerpt}`.toLowerCase();
   if (/\b(kenya|nairobi|mombasa|kisumu|nakuru|eldoret|ruto|kenyan|mpesa|m-pesa)\b/.test(text)) return "kenya";
@@ -125,7 +137,7 @@ function inferCategory(title: string, excerpt: string, fallback: NewsCategory): 
 
 function parseFeed(xml: string, feed: FeedDefinition): NewsArticle[] {
   const blocks = [...xml.matchAll(/<(item|entry)\b[\s\S]*?<\/\1>/gi)].map((match) => match[0]);
-  return blocks.slice(0, 30).flatMap((block) => {
+  return blocks.slice(0, 50).flatMap((block) => {
     const title = stripMarkup(firstTag(block, "title"));
     const sourceUrl = firstTag(block, "link") || firstAttribute(block, "link", "href");
     const description = stripMarkup(firstTag(block, "description") || firstTag(block, "summary") || firstTag(block, "content"));
@@ -160,6 +172,34 @@ async function fetchFeed(feed: FeedDefinition) {
   return parseFeed(await response.text(), feed);
 }
 
+async function enrichArticleMedia(articles: NewsArticle[]) {
+  const targets = articles.filter((article) => !article.imageUrl || !article.videoUrl).slice(0, 180);
+  const enriched = new Map<string, NewsArticle>();
+  let nextIndex = 0;
+  const worker = async () => {
+    while (nextIndex < targets.length) {
+      const article = targets[nextIndex++];
+      try {
+        const response = await fetch(article.sourceUrl, {
+          headers: { "user-agent": "GEN5minutesNews/1.0" },
+          signal: AbortSignal.timeout(5_000),
+        });
+        if (!response.ok) continue;
+        const html = (await response.text()).slice(0, 250_000);
+        enriched.set(article.id, {
+          ...article,
+          imageUrl: article.imageUrl ?? extractMetaContent(html, ["og:image", "twitter:image"]),
+          videoUrl: article.videoUrl ?? extractMetaContent(html, ["og:video", "og:video:url", "twitter:player:stream"]),
+        });
+      } catch {
+        // Keep the real RSS item even when its publisher page is unavailable.
+      }
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(8, targets.length) }, () => worker()));
+  return articles.map((article) => enriched.get(article.id) ?? article);
+}
+
 async function refreshArticles() {
   if (refreshPromise) return refreshPromise;
   refreshPromise = Promise.allSettled(FEEDS.map(fetchFeed))
@@ -175,15 +215,8 @@ async function refreshArticles() {
         return true;
       })
         .sort((a, b) => Date.parse(b.publishedAt) - Date.parse(a.publishedAt));
-      const availableImages = unique
-        .map((article) => article.imageUrl)
-        .filter((imageUrl): imageUrl is string => Boolean(imageUrl));
-      const fallbackImages = [...new Set(availableImages)].slice(0, 2);
-      const filled = unique.map((article, index) => ({
-        ...article,
-        imageUrl: article.imageUrl ?? (fallbackImages.length ? fallbackImages[index % fallbackImages.length] : null),
-      }));
-      const curated = await curateArticles(filled);
+      const enriched = await enrichArticleMedia(unique);
+      const curated = await curateArticles(enriched);
       const editionStartedAt = Date.now();
       await replaceStoredEdition(curated, editionStartedAt);
       feedCache = { articles: curated, refreshedAt: editionStartedAt };
@@ -214,11 +247,11 @@ function recordToArticle(record: NewsArticleRecord): NewsArticle {
 
 async function loadStoredEdition(): Promise<CachedFeed | null> {
   const [latest] = await db
-    .select({ editionStartedAt: newsArticlesTable.editionStartedAt })
+    .select({ editionStartedAt: newsArticlesTable.editionStartedAt, editionVersion: newsArticlesTable.editionVersion })
     .from(newsArticlesTable)
     .orderBy(desc(newsArticlesTable.editionStartedAt))
     .limit(1);
-  if (!latest || Date.now() - latest.editionStartedAt.getTime() >= EDITION_INTERVAL_MS) return null;
+  if (!latest || latest.editionVersion !== CURRENT_EDITION_VERSION || Date.now() - latest.editionStartedAt.getTime() >= EDITION_INTERVAL_MS) return null;
   const records = await db
     .select()
     .from(newsArticlesTable)
@@ -246,6 +279,7 @@ async function replaceStoredEdition(articles: NewsArticle[], editionStartedAt: n
       isFeatured: article.isFeatured ?? false,
       readingTime: article.readingTime ?? null,
       editionStartedAt: editionDate,
+      editionVersion: CURRENT_EDITION_VERSION,
     })));
   });
 }

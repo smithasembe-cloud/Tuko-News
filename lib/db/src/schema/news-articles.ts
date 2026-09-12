@@ -16,6 +16,7 @@ export const newsArticlesTable = pgTable("news_articles", {
   isFeatured: boolean("is_featured").notNull().default(false),
   readingTime: integer("reading_time"),
   editionStartedAt: timestamp("edition_started_at", { withTimezone: true }).notNull(),
+  editionVersion: integer("edition_version").notNull().default(1),
 });
 
 export const insertNewsArticleSchema = createInsertSchema(newsArticlesTable).omit({ id: true });

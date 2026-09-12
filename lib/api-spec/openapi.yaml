@@ -46,7 +46,7 @@ paths:
           schema:
             type: number
             minimum: 1
-            maximum: 100
+            maximum: 250
             default: 60
       responses:
         "200":

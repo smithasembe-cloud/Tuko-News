@@ -25,7 +25,7 @@ export default function Home() {
   const savedOnly = query.get('saved') === '1';
   const queryClient = useQueryClient();
   const [savedVersion, setSavedVersion] = useState(0);
-  const params = useMemo(() => ({ category: category || 'all', limit: 100 }) satisfies GetNewsParams, [category]);
+  const params = useMemo(() => ({ category: category || 'all', limit: 250 }) satisfies GetNewsParams, [category]);
   const feedQuery = useGetNews(params, {
     query: { queryKey: getGetNewsQueryKey(params), refetchInterval: 3_600_000, refetchOnWindowFocus: true },
   });
