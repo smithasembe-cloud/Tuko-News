@@ -12,6 +12,16 @@ const categories = [
   ['technology', 'Technology'],
 ] as const;
 
+function GenBrand() {
+  return (
+    <span className="brand-lockup" aria-label="GEN 5minutes News">
+      <span className="brand-gen">GEN</span>
+      <span className="brand-time"><strong>5</strong> MINUTES</span>
+      <span className="brand-news">NEWS</span>
+    </span>
+  );
+}
+
 export function TukoShell({ children }: { children: React.ReactNode }) {
   const [location, setLocation] = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -30,7 +40,7 @@ export function TukoShell({ children }: { children: React.ReactNode }) {
       <header className="tuko-header sticky top-0 z-40">
         <div className="tuko-container flex h-[70px] items-center justify-between gap-4">
           <Link href="/" className="brand-mark text-[2rem] text-[hsl(var(--foreground))]" data-testid="link-home">
-            GEN 5minutes News
+            <GenBrand />
           </Link>
           <div className="hidden items-center gap-2 md:flex">
             <span className="live-dot" aria-hidden="true" />
@@ -75,7 +85,7 @@ export function TukoShell({ children }: { children: React.ReactNode }) {
       <footer className="mt-24 border-t border-[hsl(var(--border))] bg-[hsl(var(--secondary))] text-[hsl(var(--secondary-foreground))]">
         <div className="tuko-container flex flex-col gap-8 py-10 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <div className="brand-mark text-4xl">GEN 5minutes News</div>
+            <div className="brand-mark text-4xl"><GenBrand /></div>
             <p className="mt-3 max-w-xs text-sm text-[hsl(var(--secondary-foreground)/.68)]">The morning read for Kenya, the continent, and a curious world.</p>
           </div>
           <div className="text-right">

@@ -121,6 +121,11 @@
 .tuko-container { width: min(100% - 2rem, 1240px); margin-inline: auto; }
 .brand-mark { letter-spacing: -.075em; font-weight: 700; line-height: .8; }
 .brand-mark em { color: hsl(var(--primary)); font-family: var(--app-font-serif); font-weight: 400; }
+.brand-lockup { display: inline-grid; grid-template-columns: auto auto; grid-template-rows: auto auto; align-items: center; column-gap: .5rem; line-height: .78; letter-spacing: -.055em; }
+.brand-gen { grid-row: 1 / span 2; font-family: var(--app-font-serif); font-size: 1.18em; font-weight: 500; letter-spacing: -.09em; color: hsl(var(--primary)); }
+.brand-time { align-self: end; font-family: var(--app-font-mono); font-size: .38em; font-weight: 800; letter-spacing: .12em; }
+.brand-time strong { display: inline-flex; align-items: center; justify-content: center; min-width: 1.35em; margin-right: .24em; padding: .2em .18em .14em; border-radius: .3em; background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); letter-spacing: -.04em; }
+.brand-news { align-self: start; font-family: var(--app-font-mono); font-size: .42em; font-weight: 800; letter-spacing: .2em; color: hsl(var(--muted-foreground)); }
 .eyebrow { font-family: var(--app-font-mono); text-transform: uppercase; letter-spacing: .13em; font-size: .66rem; font-weight: 700; }
 .hairline { border-color: hsl(var(--border)); }
 .live-dot { width: 7px; height: 7px; border-radius: 999px; background: hsl(var(--primary)); box-shadow: 0 0 0 4px hsl(var(--primary) / .13); }
@@ -148,5 +153,6 @@
 .video-badge { color: hsl(var(--accent-foreground)); background: hsl(var(--secondary) / .86); backdrop-filter: blur(12px); }
 .reading-copy { text-wrap: pretty; }
 .reading-copy p:first-of-type::first-letter { float: left; margin: .12em .12em 0 0; font-family: var(--app-font-serif); font-size: 4.3em; line-height: .72; color: hsl(var(--primary)); }
+@media (max-width: 420px) { .brand-lockup { column-gap: .34rem; } .brand-time { font-size: .33em; } .brand-news { font-size: .37em; } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: .01ms !important; } }
 @media (min-width: 768px) { .tuko-container { width: min(100% - 4rem, 1240px); } }

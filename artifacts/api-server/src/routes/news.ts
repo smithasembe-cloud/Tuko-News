@@ -132,7 +132,7 @@ function parseFeed(xml: string, feed: FeedDefinition): NewsArticle[] {
     const publishedAt = firstTag(block, "pubDate") || firstTag(block, "published") || firstTag(block, "updated");
     const timestamp = Date.parse(publishedAt);
     if (!title || !sourceUrl || !/^https?:\/\//i.test(sourceUrl)) return [];
-    const excerpt = description.length > 220 ? `${description.slice(0, 217).trim()}…` : description;
+    const excerpt = description.length > 680 ? `${description.slice(0, 677).trim()}…` : description;
     const id = createHash("sha1").update(`${feed.source}:${sourceUrl}`).digest("hex").slice(0, 14);
     const category = inferCategory(title, excerpt, feed.category);
     return [{
