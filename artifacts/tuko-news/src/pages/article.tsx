@@ -4,6 +4,7 @@ import { Link, useLocation, useParams } from 'wouter';
 import { getGetNewsQueryKey, useGetNews, useSummarizeNews, type NewsArticle } from '@workspace/api-client-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { StoryCard, StoryImage, StoryMeta, formatTime, isSaved, toggleSaved } from '@/components/story-card';
+import { Seo } from '@/components/seo';
 
 function ArticleLoading() {
   return <main className="tuko-container py-12"><div className="skeleton h-4 w-28 rounded" /><div className="mt-7 skeleton h-20 max-w-4xl rounded" /><div className="mt-5 skeleton h-5 w-3/4 rounded" /><div className="mt-10 aspect-[2/1] skeleton rounded-2xl" /><div className="mx-auto mt-10 max-w-2xl space-y-3"><div className="skeleton h-4 rounded" /><div className="skeleton h-4 rounded" /><div className="skeleton h-4 w-4/5 rounded" /></div></main>;
@@ -20,7 +21,7 @@ export default function ArticlePage() {
   const [shared, setShared] = useState(false);
   const [summaryError, setSummaryError] = useState(false);
   const queryClient = useQueryClient();
-  const feedQuery = useGetNews({ limit: 100 });
+  const feedQuery = useGetNews({ limit: 250 });
   const article = useMemo(() => feedQuery.data?.articles.find((item) => item.id === id), [feedQuery.data, id]);
   const related = useMemo(() => article ? feedQuery.data?.articles.filter((item) => item.id !== id && item.category === article.category).slice(0, 3) || [] : [], [feedQuery.data, article, id]);
   const summaryMutation = useSummarizeNews();
@@ -35,6 +36,7 @@ export default function ArticlePage() {
   const generateSummary = () => { setSummaryError(false); summaryMutation.mutate({ data: { title: article.title, excerpt: article.excerpt, source: article.source } }, { onError: () => setSummaryError(true) }); };
   return (
     <main className="tuko-container pb-16 pt-8 md:pt-12">
+      <Seo title={`${article.title} | GEN 5minutes News`} description={article.excerpt} path={`/article/${article.id}`} type="article" />
       <div className="flex items-center justify-between"><button type="button" onClick={() => setLocation('/')} className="inline-flex items-center gap-2 text-xs font-bold text-[hsl(var(--muted-foreground))] transition-colors hover:text-[hsl(var(--primary))]" data-testid="button-back-to-feed"><ArrowLeft size={16} /> Back to edition</button><span className="eyebrow text-[hsl(var(--primary))]">GEN long read</span></div>
       <article className="mx-auto mt-9 max-w-[1080px]">
         <div className="max-w-4xl reveal"><StoryMeta article={article} /><h1 className="mt-5 font-serif text-[clamp(3rem,7vw,6.8rem)] leading-[.86] tracking-[-.045em] text-balance">{article.title}</h1><p className="mt-6 max-w-2xl text-lg leading-relaxed text-[hsl(var(--muted-foreground))] md:text-xl">{article.excerpt}</p></div>

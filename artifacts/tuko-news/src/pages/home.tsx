@@ -4,6 +4,7 @@ import { Link, useLocation } from 'wouter';
 import { getGetNewsQueryKey, getGetTrendingNewsQueryKey, useGetNews, useGetTrendingNews, type NewsArticle, type GetNewsParams } from '@workspace/api-client-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { StoryCard, StoryImage, StoryMeta, formatTime, isSaved, toggleSaved } from '@/components/story-card';
+import { Seo } from '@/components/seo';
 
 function SkeletonHome() {
   return <main className="tuko-container py-10"><div className="skeleton h-5 w-32 rounded" /><div className="mt-6 grid gap-5 md:grid-cols-[1.35fr_.65fr]"><div className="skeleton h-[390px] rounded-2xl" /><div className="space-y-5"><div className="skeleton h-44 rounded-2xl" /><div className="skeleton h-44 rounded-2xl" /></div></div><div className="mt-12 grid gap-5 sm:grid-cols-3"><div className="skeleton h-52 rounded-2xl" /><div className="skeleton h-52 rounded-2xl" /><div className="skeleton h-52 rounded-2xl" /></div></main>;
@@ -63,6 +64,7 @@ export default function Home() {
   if (feedQuery.isError || !feed) return <ErrorState retry={refresh} />;
   return (
     <main>
+      <Seo title="GEN 5minutes News | Kenya and World News" description="Read fresh Kenyan, African, business, sport, culture, technology, and world news in the GEN 5minutes News edition." path="/" />
       <section className="tuko-container pb-12 pt-8 md:pb-20 md:pt-12">
         <div className="flex flex-col justify-between gap-4 border-b border-[hsl(var(--border))] pb-6 sm:flex-row sm:items-end">
           <div className="reveal"><p className="eyebrow text-[hsl(var(--primary))]">{new Intl.DateTimeFormat('en-KE', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(new Date())}</p><h1 className="mt-3 font-serif text-[clamp(3.3rem,8vw,7rem)] leading-[.82] tracking-[-.04em]">Stay curious<span className="text-[hsl(var(--primary))]">.</span></h1><p className="mt-5 max-w-md text-sm leading-relaxed text-[hsl(var(--muted-foreground))]">The stories moving Kenya and the wider world, selected for a sharper start to the day.</p></div>
