@@ -1,0 +1,24 @@
+{
+  "name": "Mwangaza Wire",
+  "short_name": "Mwangaza",
+  "description": "Mwangaza News Brief brings trusted publisher stories from Kenya and the world together.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f8f1e7",
+  "theme_color": "#163e3a",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/apple-touch-icon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

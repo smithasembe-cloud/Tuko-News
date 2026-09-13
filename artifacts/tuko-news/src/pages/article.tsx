@@ -6,6 +6,26 @@ import { useQueryClient } from '@tanstack/react-query';
 import { StoryCard, StoryImage, StoryMeta, formatTime, isSaved, toggleSaved } from '@/components/story-card';
 import { Seo } from '@/components/seo';
 
+function getVideoEmbedUrl(url: string) {
+  try {
+    const parsed = new URL(url);
+    if (parsed.hostname === 'youtu.be') {
+      return `https://www.youtube.com/embed/${parsed.pathname.slice(1)}?rel=0`;
+    }
+    if (parsed.hostname === 'youtube.com' || parsed.hostname.endsWith('.youtube.com')) {
+      const videoId = parsed.searchParams.get('v');
+      return videoId ? `https://www.youtube.com/embed/${videoId}?rel=0` : url;
+    }
+    if (parsed.hostname === 'vimeo.com' || parsed.hostname.endsWith('.vimeo.com')) {
+      const videoId = parsed.pathname.split('/').filter(Boolean).pop();
+      return videoId ? `https://player.vimeo.com/video/${videoId}` : url;
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
+
 function ArticleLoading() {
   return <main className="tuko-container py-12"><div className="skeleton h-4 w-28 rounded" /><div className="mt-7 skeleton h-20 max-w-4xl rounded" /><div className="mt-5 skeleton h-5 w-3/4 rounded" /><div className="mt-10 aspect-[2/1] skeleton rounded-2xl" /><div className="mx-auto mt-10 max-w-2xl space-y-3"><div className="skeleton h-4 rounded" /><div className="skeleton h-4 rounded" /><div className="skeleton h-4 w-4/5 rounded" /></div></main>;
 }
@@ -41,7 +61,7 @@ export default function ArticlePage() {
       <article className="mx-auto mt-9 max-w-[1080px]">
         <div className="max-w-4xl reveal"><StoryMeta article={article} /><h1 className="mt-5 font-serif text-[clamp(3rem,7vw,6.8rem)] leading-[.86] tracking-[-.045em] text-balance">{article.title}</h1><p className="mt-6 max-w-2xl text-lg leading-relaxed text-[hsl(var(--muted-foreground))] md:text-xl">{article.excerpt}</p></div>
          <div className="mt-8 flex flex-wrap items-center justify-between gap-4 border-y border-[hsl(var(--border))] py-4 reveal reveal-1"><div className="flex items-center gap-3 text-xs text-[hsl(var(--muted-foreground))]"><span className="font-semibold text-[hsl(var(--foreground))]">{article.author || 'Mwangaza News Desk'}</span><span className="h-1 w-1 rounded-full bg-current opacity-40" /><span>{formatTime(article.publishedAt)}</span></div><div className="flex items-center gap-2"><button type="button" onClick={handleSave} className={`inline-flex items-center gap-2 rounded-full border px-3.5 py-2 text-xs font-bold transition-all ${saved ? 'border-[hsl(var(--primary))] bg-[hsl(var(--primary)/.1)] text-[hsl(var(--primary))]' : 'border-[hsl(var(--border))] hover:border-[hsl(var(--primary))]'}`} data-testid="button-save-article">{saved ? <Check size={14} /> : <Bookmark size={14} />}{saved ? 'Saved' : 'Save story'}</button><button type="button" onClick={share} className="inline-flex items-center gap-2 rounded-full border border-[hsl(var(--border))] px-3.5 py-2 text-xs font-bold transition-all hover:border-[hsl(var(--primary))] hover:text-[hsl(var(--primary))]" data-testid="button-share-article">{shared ? <Check size={14} /> : <Copy size={14} />}{shared ? 'Copied' : 'Share'}</button></div></div>
-         <div className="media-stage mt-8 overflow-hidden rounded-[1.2rem] reveal reveal-2">{article.videoUrl ? <div className="relative h-full"><video className="media-video" controls playsInline preload="metadata" poster={article.imageUrl ?? undefined}><source src={article.videoUrl} /></video><span className="video-badge absolute left-4 top-4 inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-xs font-bold"><Play size={13} fill="currentColor" /> Publisher video</span></div> : <div className="aspect-[16/8]"><StoryImage article={article} /></div>}</div>
+          <div className="media-stage mt-8 overflow-hidden rounded-[1.2rem] reveal reveal-2">{article.videoUrl ? (() => { const embedUrl = getVideoEmbedUrl(article.videoUrl); return <div className="relative aspect-video h-full">{embedUrl ? <iframe className="h-full w-full" src={embedUrl} title={`Publisher video for ${article.title}`} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen /> : <video className="media-video" controls playsInline preload="metadata" poster={article.imageUrl ?? undefined}><source src={article.videoUrl} /></video>}<span className="video-badge absolute left-4 top-4 inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-xs font-bold"><Play size={13} fill="currentColor" /> Publisher video</span></div>; })() : <div className="aspect-[16/8]"><StoryImage article={article} /></div>}</div>
         <div className="mx-auto mt-10 grid max-w-4xl gap-10 lg:grid-cols-[1fr_275px]">
           <div>
              <div className="prose reading-copy prose-lg max-w-none prose-p:font-serif prose-p:text-[1.28rem] prose-p:leading-[1.55] prose-p:text-[hsl(var(--foreground))]"><p className="!font-sans !text-xs !font-bold !uppercase !tracking-[.14em] !text-[hsl(var(--primary))]">Publisher-supplied excerpt</p><p>{article.excerpt}</p><p>This report is attributed to <strong>{article.source}</strong>. Mwangaza News Brief expands the available publisher context while keeping the original reporting close at hand.</p></div>

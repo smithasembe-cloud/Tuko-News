@@ -7,9 +7,10 @@ const categories = [
   ['kenya', 'Kenya'],
   ['world', 'World'],
   ['business', 'Business'],
-  ['sport', 'Sport'],
+  ['sport', 'Sports'],
   ['culture', 'Culture'],
   ['technology', 'Technology'],
+  ['videos', 'Videos'],
 ] as const;
 
 function MwangazaBrand() {

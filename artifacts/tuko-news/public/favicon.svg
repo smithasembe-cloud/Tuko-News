@@ -1,3 +1,17 @@
-<svg width="180" height="180" viewBox="0 0 180 180" fill="none" xmlns="http://www.w3.org/2000/svg">
-<rect width="180" height="180" rx="36" fill="#FF3C00"/>
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="64" y1="32" x2="448" y2="480" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#163E3A"/>
+      <stop offset="1" stop-color="#082622"/>
+    </linearGradient>
+    <linearGradient id="sun" x1="184" y1="78" x2="332" y2="226" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFD166"/>
+      <stop offset="1" stop-color="#F06A3A"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <path d="M256 66V34M142 104l-22-22M370 104l22-22M103 218H71M441 218h-32" stroke="#FFD166" stroke-width="16" stroke-linecap="round" opacity=".9"/>
+  <circle cx="256" cy="188" r="82" fill="url(#sun)"/>
+  <path d="M107 390V273l69 80 80-108 80 108 69-80v117" stroke="#F8F1E7" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="414" cy="409" r="14" fill="#F06A3A"/>
 </svg>

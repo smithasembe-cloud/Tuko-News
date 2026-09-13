@@ -55,7 +55,7 @@ const FEEDS: FeedDefinition[] = [
 ];
 
 const EDITION_INTERVAL_MS = 3_600_000;
-const CURRENT_EDITION_VERSION = 4;
+const CURRENT_EDITION_VERSION = 6;
 let feedCache: CachedFeed | null = null;
 let refreshPromise: Promise<NewsArticle[]> | null = null;
 let refreshTimer: NodeJS.Timeout | null = null;
@@ -110,6 +110,9 @@ function extractVideo(block: string) {
     firstAttribute(videoTag, "video", "src"),
     firstAttribute(videoTag, "source", "src"),
     videoTag.match(/\b(?:url|src)=["']([^"']+)["']/i)?.[1] ?? "",
+    block.match(/<media:player\b[^>]*\burl=["']([^"']+)["']/i)?.[1] ?? "",
+    block.match(/<iframe\b[^>]*\bsrc=["']([^"']+)["']/i)?.[1] ?? "",
+    block.match(/<link\b[^>]*\brel=["']enclosure["'][^>]*\btype=["'][^"']*video[^"']*["'][^>]*\bhref=["']([^"']+)["']/i)?.[1] ?? "",
   ];
   return candidates.find((candidate) => /^https?:\/\//i.test(candidate)) ?? null;
 }
@@ -136,17 +139,28 @@ function extractMetaValue(html: string, names: string[]) {
   return null;
 }
 
+function extractEmbeddedVideo(html: string) {
+  const candidates = [
+    html.match(/<(?:iframe|embed|video|source)\b[^>]*\bsrc=["']([^"']+)["']/i)?.[1] ?? "",
+    html.match(/"contentUrl"\s*:\s*"([^"]+)"/i)?.[1] ?? "",
+    html.match(/"embedUrl"\s*:\s*"([^"]+)"/i)?.[1] ?? "",
+  ].map(decodeXml);
+  return candidates.find((candidate) => /(?:youtube\.com|youtu\.be|vimeo\.com|\.(?:mp4|webm|m3u8)(?:\?|$))/i.test(candidate)) ?? null;
+}
+
 function limitExcerpt(value: string, maxLength = 900) {
   return value.length > maxLength ? `${value.slice(0, maxLength - 3).trim()}…` : value;
 }
 
-function inferCategory(title: string, excerpt: string, fallback: NewsCategory): NewsCategory {
+function inferCategory(title: string, excerpt: string, fallback: NewsCategory, hint = ""): NewsCategory {
   const text = `${title} ${excerpt}`.toLowerCase();
-  if (/\b(kenya|nairobi|mombasa|kisumu|nakuru|eldoret|ruto|kenyan|mpesa|m-pesa)\b/.test(text)) return "kenya";
-  if (/\b(stock|market|business|economy|trade|company|finance|bank)\b/.test(text)) return "business";
-  if (/\b(football|soccer|sport|cricket|rugby|tennis|olympic|league)\b/.test(text)) return "sport";
-  if (/\b(film|music|art|culture|book|fashion|celebrity)\b/.test(text)) return "culture";
-  if (/\b(technology|tech|ai|software|startup|cyber|robot)\b/.test(text)) return "technology";
+  const hintText = hint.toLowerCase();
+  const matches = (pattern: RegExp) => pattern.test(text) || pattern.test(hintText);
+  if (matches(/\b(football|soccer|sport|sports|cricket|rugby|tennis|athletics|marathon|olympic|league|championship|tournament|medal|coach|player)\b/)) return "sport";
+  if (matches(/\b(technology|tech|ai|software|startup|cyber|robot|app|internet|digital)\b/)) return "technology";
+  if (matches(/\b(stock|market|business|economy|trade|company|finance|bank|investment|profit|inflation)\b/)) return "business";
+  if (matches(/\b(film|music|art|culture|book|fashion|celebrity|entertainment|actor|singer)\b/)) return "culture";
+  if (matches(/\b(kenya|nairobi|mombasa|kisumu|nakuru|eldoret|ruto|kenyan|mpesa|m-pesa)\b/)) return "kenya";
   return fallback;
 }
 
@@ -161,7 +175,7 @@ function parseFeed(xml: string, feed: FeedDefinition): NewsArticle[] {
     if (!title || !sourceUrl || !/^https?:\/\//i.test(sourceUrl)) return [];
     const excerpt = limitExcerpt(description);
     const id = createHash("sha1").update(`${feed.source}:${sourceUrl}`).digest("hex").slice(0, 14);
-    const category = inferCategory(title, excerpt, feed.category);
+    const category = inferCategory(title, excerpt, feed.category, stripMarkup(firstTag(block, "category")));
     return [{
       id,
       title,
@@ -206,7 +220,7 @@ async function enrichArticleMedia(articles: NewsArticle[]) {
           ...article,
           excerpt: publisherDescription && publisherDescription.length > article.excerpt.length ? limitExcerpt(publisherDescription) : article.excerpt,
           imageUrl: article.imageUrl ?? extractMetaContent(html, ["og:image", "twitter:image"]),
-          videoUrl: article.videoUrl ?? extractMetaContent(html, ["og:video", "og:video:url", "twitter:player:stream"]),
+          videoUrl: article.videoUrl ?? extractMetaContent(html, ["og:video", "og:video:url", "og:video:secure_url", "twitter:player:stream"]) ?? extractEmbeddedVideo(html),
         });
       } catch {
         // Keep the real RSS item even when its publisher page is unavailable.

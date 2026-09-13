@@ -14,15 +14,19 @@ function ErrorState({ retry }: { retry: () => void }) {
   return <div className="tuko-container py-20"><div className="mx-auto max-w-md rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-8 text-center"><div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[hsl(var(--primary)/.12)] text-[hsl(var(--primary))]"><Rss size={22} /></div><h2 className="mt-5 font-serif text-3xl">The desk is quiet.</h2><p className="mt-2 text-sm leading-relaxed text-[hsl(var(--muted-foreground))]">We couldn't reach the live feed. Try the connection once more.</p><button type="button" onClick={retry} className="mt-6 rounded-full bg-[hsl(var(--primary))] px-5 py-2.5 text-sm font-bold text-[hsl(var(--primary-foreground))]" data-testid="button-retry-feed">Try again</button></div></div>;
 }
 
-function EmptyState({ saved }: { saved: boolean }) {
-  return <div className="border-y border-[hsl(var(--border))] py-16 text-center"><div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))]">{saved ? <Bookmark size={21} /> : <SearchX size={21} />}</div><h2 className="mt-4 font-serif text-3xl">{saved ? 'Nothing saved yet.' : 'No stories in this edition.'}</h2><p className="mt-2 text-sm text-[hsl(var(--muted-foreground))]">{saved ? 'Tap the bookmark on a story and it will wait here.' : 'Try another section or check back soon.'}</p></div>;
+function EmptyState({ saved, videoOnly }: { saved: boolean; videoOnly: boolean }) {
+  const title = saved ? 'Nothing saved yet.' : videoOnly ? 'No publisher videos in this edition.' : 'No stories in this edition.';
+  const description = saved ? 'Tap the bookmark on a story and it will wait here.' : videoOnly ? 'Videos appear here when a publisher provides a playable video URL.' : 'Try another section or check back soon.';
+  return <div className="border-y border-[hsl(var(--border))] py-16 text-center"><div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))]">{saved ? <Bookmark size={21} /> : <SearchX size={21} />}</div><h2 className="mt-4 font-serif text-3xl">{title}</h2><p className="mt-2 text-sm text-[hsl(var(--muted-foreground))]">{description}</p></div>;
 }
 
 export default function Home() {
   const [location] = useLocation();
   const scrollKey = `mwangaza-scroll:${location}`;
   const query = new URLSearchParams(location.split('?')[1] || '');
-  const category = query.get('category') as GetNewsParams['category'] || undefined;
+  const requestedCategory = query.get('category');
+  const videoOnly = requestedCategory === 'videos';
+  const category = (videoOnly ? undefined : requestedCategory) as GetNewsParams['category'] || undefined;
   const search = query.get('q')?.toLowerCase() || '';
   const savedOnly = query.get('saved') === '1';
   const queryClient = useQueryClient();
@@ -43,9 +47,9 @@ export default function Home() {
   const feed = feedQuery.data;
   const filtered = useMemo(() => (feed?.articles || []).filter((article) => {
     const matchesSearch = !search || `${article.title} ${article.excerpt} ${article.source}`.toLowerCase().includes(search);
-    return matchesSearch && (!savedOnly || isSaved(article.id));
-  }), [feed, search, savedOnly, savedVersion]);
-  useEffect(() => setVisibleCount(14), [category, search, savedOnly]);
+     return matchesSearch && (!savedOnly || isSaved(article.id)) && (!videoOnly || Boolean(article.videoUrl));
+  }), [feed, search, savedOnly, savedVersion, videoOnly]);
+  useEffect(() => setVisibleCount(14), [category, search, savedOnly, videoOnly]);
   useEffect(() => {
     if (!feedQuery.isSuccess) return;
     const savedPosition = Number(sessionStorage.getItem(scrollKey) || 0);
@@ -92,10 +96,10 @@ export default function Home() {
         </div>
         {search && <p className="mt-6 text-sm text-[hsl(var(--muted-foreground))]">Showing results for <strong className="text-[hsl(var(--foreground))]">“{search}”</strong></p>}
         {savedOnly && <p className="mt-6 flex items-center gap-2 text-sm text-[hsl(var(--muted-foreground))]"><Bookmark size={15} /> Your saved stories</p>}
-        {!filtered.length ? <div className="mt-10"><EmptyState saved={savedOnly} /></div> : (
+         {!filtered.length ? <div className="mt-10"><EmptyState saved={savedOnly} videoOnly={videoOnly} /></div> : (
           <>
             <div className="mt-8 grid gap-5 md:grid-cols-[1.35fr_.65fr]">
-              {featured && <article className="story-card reveal reveal-1 group relative min-h-[390px] overflow-hidden rounded-[1.2rem] bg-[hsl(var(--secondary))]" data-testid={`card-featured-${featured.id}`}><Link href={`/article/${featured.id}`} className="absolute inset-0" data-testid={`link-featured-${featured.id}`}><StoryImage article={featured} className="opacity-80 mix-blend-luminosity transition-opacity group-hover:opacity-95" /><div className="absolute inset-0 bg-gradient-to-t from-[hsl(var(--secondary))] via-[hsl(var(--secondary)/.28)] to-transparent" /><div className="absolute inset-x-0 bottom-0 p-6 text-[hsl(var(--background))] sm:p-8"><StoryMeta article={featured} light /><h2 className="mt-3 max-w-2xl font-serif text-[clamp(2.2rem,5vw,4.2rem)] leading-[.91] tracking-[-.025em]">{featured.title}</h2><p className="mt-4 max-w-xl text-sm leading-relaxed text-[hsl(var(--background)/.76)]">{featured.excerpt}</p><span className="mt-6 inline-flex items-center gap-2 text-xs font-bold text-[hsl(var(--accent))]">Open the full story <ArrowUpRight size={15} /></span></div></Link><button type="button" onClick={() => toggleSaved(featured.id)} aria-label={`Save ${featured.title}`} className="absolute right-5 top-5 rounded-full bg-[hsl(var(--secondary)/.65)] p-3 text-[hsl(var(--background))] backdrop-blur transition-colors hover:bg-[hsl(var(--primary))]" data-testid={`button-save-featured-${featured.id}`}><Bookmark size={17} /></button></article>}
+              {featured && <article className="story-card reveal reveal-1 group relative min-h-[390px] overflow-hidden rounded-[1.2rem] bg-[hsl(var(--secondary))]" data-testid={`card-featured-${featured.id}`}><Link href={`/article/${featured.id}`} className="absolute inset-0" data-testid={`link-featured-${featured.id}`}><StoryImage article={featured} className="opacity-80 mix-blend-luminosity transition-opacity group-hover:opacity-95" /><div className="absolute inset-0 bg-gradient-to-t from-[hsl(var(--secondary))] via-[hsl(var(--secondary)/.28)] to-transparent" /><div className="absolute inset-x-0 bottom-0 p-6 text-[hsl(var(--background))] sm:p-8"><StoryMeta article={featured} light /><h2 className="mt-3 max-w-2xl font-serif text-[clamp(2.2rem,5vw,4.2rem)] leading-[.91] tracking-[-.025em]">{featured.title}</h2><p className="mt-4 line-clamp-4 max-w-xl text-sm leading-relaxed text-[hsl(var(--background)/.76)]">{featured.excerpt}</p><span className="mt-6 inline-flex items-center gap-2 text-xs font-bold text-[hsl(var(--accent))]">Open the full story <ArrowUpRight size={15} /></span></div></Link><button type="button" onClick={() => toggleSaved(featured.id)} aria-label={`Save ${featured.title}`} className="absolute right-5 top-5 rounded-full bg-[hsl(var(--secondary)/.65)] p-3 text-[hsl(var(--background))] backdrop-blur transition-colors hover:bg-[hsl(var(--primary))]" data-testid={`button-save-featured-${featured.id}`}><Bookmark size={17} /></button></article>}
               <div className="flex flex-col gap-5">{rest.slice(0, 2).map((article, index) => <StoryCard article={article} key={article.id} index={index + 1} />)}</div>
             </div>
             <div className="mt-14 grid gap-12 lg:grid-cols-[1fr_320px]">
