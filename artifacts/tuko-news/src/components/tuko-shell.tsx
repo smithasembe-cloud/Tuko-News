@@ -12,12 +12,12 @@ const categories = [
   ['technology', 'Technology'],
 ] as const;
 
-function GenBrand() {
+function MwangazaBrand() {
   return (
-    <span className="brand-lockup" aria-label="GEN 5minutes News">
-      <span className="brand-gen">GEN</span>
-      <span className="brand-time"><strong>5</strong> MINUTES</span>
-      <span className="brand-news">NEWS</span>
+    <span className="brand-lockup" aria-label="Mwangaza Wire">
+      <span className="brand-mwangaza">Mwangaza</span>
+      <span className="brand-wire">WIRE</span>
+      <span className="brand-brief">NEWS BRIEF</span>
     </span>
   );
 }
@@ -40,7 +40,7 @@ export function TukoShell({ children }: { children: React.ReactNode }) {
       <header className="tuko-header sticky top-0 z-40">
         <div className="tuko-container flex h-[70px] items-center justify-between gap-4">
           <Link href="/" className="brand-mark text-[2rem] text-[hsl(var(--foreground))]" data-testid="link-home">
-            <GenBrand />
+            <MwangazaBrand />
           </Link>
           <div className="hidden items-center gap-2 md:flex">
             <span className="live-dot" aria-hidden="true" />
@@ -85,8 +85,8 @@ export function TukoShell({ children }: { children: React.ReactNode }) {
       <footer className="mt-24 border-t border-[hsl(var(--border))] bg-[hsl(var(--secondary))] text-[hsl(var(--secondary-foreground))]">
         <div className="tuko-container flex flex-col gap-8 py-10 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <div className="brand-mark text-4xl"><GenBrand /></div>
-            <p className="mt-3 max-w-xs text-sm text-[hsl(var(--secondary-foreground)/.68)]">The morning read for Kenya, the continent, and a curious world.</p>
+            <div className="brand-mark text-4xl"><MwangazaBrand /></div>
+            <p className="mt-3 max-w-xs text-sm text-[hsl(var(--secondary-foreground)/.68)]">Mwangaza News Brief for Kenya, the continent, and a curious world.</p>
           </div>
           <div className="text-right">
             <p className="eyebrow text-[hsl(var(--accent))]">Independent reading</p>

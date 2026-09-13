@@ -55,7 +55,7 @@ const FEEDS: FeedDefinition[] = [
 ];
 
 const EDITION_INTERVAL_MS = 3_600_000;
-const CURRENT_EDITION_VERSION = 2;
+const CURRENT_EDITION_VERSION = 4;
 let feedCache: CachedFeed | null = null;
 let refreshPromise: Promise<NewsArticle[]> | null = null;
 let refreshTimer: NodeJS.Timeout | null = null;
@@ -125,6 +125,21 @@ function extractMetaContent(html: string, names: string[]) {
   return null;
 }
 
+function extractMetaValue(html: string, names: string[]) {
+  const tags = html.match(/<meta\b[^>]*>/gi) ?? [];
+  for (const tag of tags) {
+    const name = tag.match(/\b(?:property|name)=["']([^"']+)["']/i)?.[1]?.toLowerCase();
+    if (!name || !names.includes(name)) continue;
+    const content = tag.match(/\bcontent=["']([^"']+)["']/i)?.[1] ?? "";
+    if (content) return stripMarkup(content);
+  }
+  return null;
+}
+
+function limitExcerpt(value: string, maxLength = 900) {
+  return value.length > maxLength ? `${value.slice(0, maxLength - 3).trim()}…` : value;
+}
+
 function inferCategory(title: string, excerpt: string, fallback: NewsCategory): NewsCategory {
   const text = `${title} ${excerpt}`.toLowerCase();
   if (/\b(kenya|nairobi|mombasa|kisumu|nakuru|eldoret|ruto|kenyan|mpesa|m-pesa)\b/.test(text)) return "kenya";
@@ -140,11 +155,11 @@ function parseFeed(xml: string, feed: FeedDefinition): NewsArticle[] {
   return blocks.slice(0, 50).flatMap((block) => {
     const title = stripMarkup(firstTag(block, "title"));
     const sourceUrl = firstTag(block, "link") || firstAttribute(block, "link", "href");
-    const description = stripMarkup(firstTag(block, "description") || firstTag(block, "summary") || firstTag(block, "content"));
+    const description = stripMarkup(firstTag(block, "content:encoded") || firstTag(block, "description") || firstTag(block, "summary") || firstTag(block, "content"));
     const publishedAt = firstTag(block, "pubDate") || firstTag(block, "published") || firstTag(block, "updated");
     const timestamp = Date.parse(publishedAt);
     if (!title || !sourceUrl || !/^https?:\/\//i.test(sourceUrl)) return [];
-    const excerpt = description.length > 680 ? `${description.slice(0, 677).trim()}…` : description;
+    const excerpt = limitExcerpt(description);
     const id = createHash("sha1").update(`${feed.source}:${sourceUrl}`).digest("hex").slice(0, 14);
     const category = inferCategory(title, excerpt, feed.category);
     return [{
@@ -165,7 +180,7 @@ function parseFeed(xml: string, feed: FeedDefinition): NewsArticle[] {
 
 async function fetchFeed(feed: FeedDefinition) {
   const response = await fetch(feed.url, {
-    headers: { "user-agent": "TukoNews/1.0 (+https://tuko.news)" },
+    headers: { "user-agent": "MwangazaWire/1.0" },
     signal: AbortSignal.timeout(8_000),
   });
   if (!response.ok) throw new Error(`${feed.source} returned ${response.status}`);
@@ -173,7 +188,7 @@ async function fetchFeed(feed: FeedDefinition) {
 }
 
 async function enrichArticleMedia(articles: NewsArticle[]) {
-  const targets = articles.filter((article) => !article.imageUrl || !article.videoUrl).slice(0, 180);
+  const targets = articles.filter((article) => !article.imageUrl || !article.videoUrl || article.excerpt.length < 500).slice(0, 180);
   const enriched = new Map<string, NewsArticle>();
   let nextIndex = 0;
   const worker = async () => {
@@ -181,13 +196,15 @@ async function enrichArticleMedia(articles: NewsArticle[]) {
       const article = targets[nextIndex++];
       try {
         const response = await fetch(article.sourceUrl, {
-          headers: { "user-agent": "GEN5minutesNews/1.0" },
+          headers: { "user-agent": "MwangazaWire/1.0" },
           signal: AbortSignal.timeout(5_000),
         });
         if (!response.ok) continue;
         const html = (await response.text()).slice(0, 250_000);
+        const publisherDescription = extractMetaValue(html, ["og:description", "twitter:description", "description"]);
         enriched.set(article.id, {
           ...article,
+          excerpt: publisherDescription && publisherDescription.length > article.excerpt.length ? limitExcerpt(publisherDescription) : article.excerpt,
           imageUrl: article.imageUrl ?? extractMetaContent(html, ["og:image", "twitter:image"]),
           videoUrl: article.videoUrl ?? extractMetaContent(html, ["og:video", "og:video:url", "twitter:player:stream"]),
         });
@@ -306,7 +323,7 @@ async function curateArticles(articles: NewsArticle[]) {
     publishedAt: article.publishedAt,
   }));
   const prompt = [
-    "You are the GEN 5minutes News editorial desk. Curate the supplied real RSS items; do not write, rewrite, or invent any news.",
+    "You are the Mwangaza Wire editorial desk. Curate the supplied real RSS items; do not write, rewrite, or invent any news.",
     "Return JSON only in exactly this shape: {\"orderedIds\":[\"id-1\",\"id-2\"]}.",
     "Use only IDs from the supplied list, include each ID at most once, and include every ID.",
     "Put genuinely Kenyan stories first, then other East African stories, then the wider world.",
@@ -367,7 +384,7 @@ async function generateSummary(title: string, excerpt: string, source: string) {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) return {
     summary: `${excerpt} Read the full report from ${source} for the latest verified details.`,
-    generatedBy: "GEN 5minutes News editorial summary",
+    generatedBy: "Mwangaza Wire editorial summary",
   };
 
   const prompt = [

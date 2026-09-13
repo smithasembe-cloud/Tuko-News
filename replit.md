@@ -1,6 +1,6 @@
-# GEN 5minutes News
+# Mwangaza Wire
 
-GEN 5minutes News is a live, image-led news reader for Kenya and the wider world with transparent publisher attribution and reader-friendly AI briefs.
+Mwangaza Wire is a live, image-led news reader for Kenya and the wider world with transparent publisher attribution and reader-friendly news briefs.
 
 ## Run & Operate
 
@@ -25,7 +25,7 @@ GEN 5minutes News is a live, image-led news reader for Kenya and the wider world
 - `artifacts/tuko-news/src/` — React reader shell, homepage, article view, and editorial components
 - `artifacts/api-server/src/routes/news.ts` — RSS aggregation, source metadata, Kenya-first AI curation, hourly edition storage, and optional Gemini summaries
 - `lib/api-spec/openapi.yaml` — source of truth for live news and summary contracts
-- `artifacts/tuko-news/src/index.css` — GEN visual system, typography, motion, and responsive layout
+- `artifacts/tuko-news/src/index.css` — Mwangaza visual system, typography, motion, and responsive layout
 
 ## Architecture decisions
 

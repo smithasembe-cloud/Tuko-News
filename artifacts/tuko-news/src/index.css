@@ -122,10 +122,9 @@
 .brand-mark { letter-spacing: -.075em; font-weight: 700; line-height: .8; }
 .brand-mark em { color: hsl(var(--primary)); font-family: var(--app-font-serif); font-weight: 400; }
 .brand-lockup { display: inline-grid; grid-template-columns: auto auto; grid-template-rows: auto auto; align-items: center; column-gap: .5rem; line-height: .78; letter-spacing: -.055em; }
-.brand-gen { grid-row: 1 / span 2; font-family: var(--app-font-serif); font-size: 1.18em; font-weight: 500; letter-spacing: -.09em; color: hsl(var(--primary)); }
-.brand-time { align-self: end; font-family: var(--app-font-mono); font-size: .38em; font-weight: 800; letter-spacing: .12em; }
-.brand-time strong { display: inline-flex; align-items: center; justify-content: center; min-width: 1.35em; margin-right: .24em; padding: .2em .18em .14em; border-radius: .3em; background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); letter-spacing: -.04em; }
-.brand-news { align-self: start; font-family: var(--app-font-mono); font-size: .42em; font-weight: 800; letter-spacing: .2em; color: hsl(var(--muted-foreground)); }
+.brand-mwangaza { grid-row: 1 / span 2; font-family: var(--app-font-serif); font-size: .98em; font-weight: 500; letter-spacing: -.09em; color: hsl(var(--primary)); }
+.brand-wire { align-self: end; font-family: var(--app-font-mono); font-size: .38em; font-weight: 800; letter-spacing: .18em; }
+.brand-brief { align-self: start; font-family: var(--app-font-mono); font-size: .35em; font-weight: 800; letter-spacing: .16em; color: hsl(var(--muted-foreground)); }
 .eyebrow { font-family: var(--app-font-mono); text-transform: uppercase; letter-spacing: .13em; font-size: .66rem; font-weight: 700; }
 .hairline { border-color: hsl(var(--border)); }
 .live-dot { width: 7px; height: 7px; border-radius: 999px; background: hsl(var(--primary)); box-shadow: 0 0 0 4px hsl(var(--primary) / .13); }
@@ -134,7 +133,7 @@
 .story-image { transition: transform .65s cubic-bezier(.2,.75,.25,1), filter .35s ease; }
 .story-card:hover .story-image { transform: scale(1.045); filter: saturate(1.1); }
 .image-placeholder { background: linear-gradient(135deg, hsl(var(--secondary)), hsl(184 39% 20%)); position: relative; overflow: hidden; }
-.image-placeholder::after { content: 'GEN / REPORTING'; position: absolute; right: 1rem; bottom: 1rem; color: hsl(var(--accent) / .85); font: 700 .6rem var(--app-font-mono); letter-spacing: .14em; transform: rotate(-90deg) translateX(100%); transform-origin: right bottom; }
+.image-placeholder::after { content: 'MWANGAZA / REPORTING'; position: absolute; right: 1rem; bottom: 1rem; color: hsl(var(--accent) / .85); font: 700 .6rem var(--app-font-mono); letter-spacing: .14em; transform: rotate(-90deg) translateX(100%); transform-origin: right bottom; }
 .image-placeholder::before { content: ''; position: absolute; width: 14rem; height: 14rem; border: 1px solid hsl(var(--accent) / .38); border-radius: 50%; left: -3rem; top: -4rem; box-shadow: 4rem 3rem 0 -1px hsl(var(--accent) / .09), 8rem 6rem 0 -2px hsl(var(--accent) / .08); }
 .reveal { animation: reveal .7s both cubic-bezier(.2,.75,.25,1); }
 .reveal-1 { animation-delay: .08s; }

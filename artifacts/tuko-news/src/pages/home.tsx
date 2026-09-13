@@ -20,6 +20,7 @@ function EmptyState({ saved }: { saved: boolean }) {
 
 export default function Home() {
   const [location] = useLocation();
+  const scrollKey = `mwangaza-scroll:${location}`;
   const query = new URLSearchParams(location.split('?')[1] || '');
   const category = query.get('category') as GetNewsParams['category'] || undefined;
   const search = query.get('q')?.toLowerCase() || '';
@@ -46,6 +47,25 @@ export default function Home() {
   }), [feed, search, savedOnly, savedVersion]);
   useEffect(() => setVisibleCount(14), [category, search, savedOnly]);
   useEffect(() => {
+    if (!feedQuery.isSuccess) return;
+    const savedPosition = Number(sessionStorage.getItem(scrollKey) || 0);
+    const targetPosition = Number.isFinite(savedPosition) ? Math.max(0, savedPosition) : 0;
+    setVisibleCount((count) => Math.min(filtered.length, Math.max(count, Math.max(14, Math.ceil(targetPosition / 260) * 2))));
+    let secondFrame = 0;
+    const frame = requestAnimationFrame(() => {
+      secondFrame = requestAnimationFrame(() => window.scrollTo(0, targetPosition));
+    });
+    return () => {
+      cancelAnimationFrame(frame);
+      cancelAnimationFrame(secondFrame);
+    };
+  }, [feedQuery.isSuccess, filtered.length, scrollKey]);
+  useEffect(() => {
+    const savePosition = () => sessionStorage.setItem(scrollKey, String(window.scrollY));
+    window.addEventListener('scroll', savePosition, { passive: true });
+    return () => window.removeEventListener('scroll', savePosition);
+  }, [scrollKey]);
+  useEffect(() => {
     const sentinel = document.querySelector('[data-testid="feed-sentinel"]');
     if (!sentinel) return;
     const observer = new IntersectionObserver(([entry]) => {
@@ -64,7 +84,7 @@ export default function Home() {
   if (feedQuery.isError || !feed) return <ErrorState retry={refresh} />;
   return (
     <main>
-      <Seo title="GEN 5minutes News | Kenya and World News" description="Read fresh Kenyan, African, business, sport, culture, technology, and world news in the GEN 5minutes News edition." path="/" />
+      <Seo title="Mwangaza Wire | Kenya and World News" description="Mwangaza News Brief brings fresh Kenyan, African, business, sport, culture, technology, and world news together." path="/" />
       <section className="tuko-container pb-12 pt-8 md:pb-20 md:pt-12">
         <div className="flex flex-col justify-between gap-4 border-b border-[hsl(var(--border))] pb-6 sm:flex-row sm:items-end">
           <div className="reveal"><p className="eyebrow text-[hsl(var(--primary))]">{new Intl.DateTimeFormat('en-KE', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(new Date())}</p><h1 className="mt-3 font-serif text-[clamp(3.3rem,8vw,7rem)] leading-[.82] tracking-[-.04em]">Stay curious<span className="text-[hsl(var(--primary))]">.</span></h1><p className="mt-5 max-w-md text-sm leading-relaxed text-[hsl(var(--muted-foreground))]">The stories moving Kenya and the wider world, selected for a sharper start to the day.</p></div>
@@ -85,7 +105,7 @@ export default function Home() {
           </>
         )}
       </section>
-      <div className="overflow-hidden border-y border-[hsl(var(--border))] bg-[hsl(var(--accent))] py-2.5 text-[hsl(var(--accent-foreground))]"><div className="ticker-track flex w-max gap-8 whitespace-nowrap"><span className="eyebrow">GEN 5minutes briefing</span><ArrowDown size={13} /><span className="eyebrow">Read beyond the headline</span><span className="opacity-50">◆</span><span className="eyebrow">GEN 5minutes briefing</span><ArrowDown size={13} /><span className="eyebrow">Read beyond the headline</span><span className="opacity-50">◆</span></div></div>
+      <div className="overflow-hidden border-y border-[hsl(var(--border))] bg-[hsl(var(--accent))] py-2.5 text-[hsl(var(--accent-foreground))]"><div className="ticker-track flex w-max gap-8 whitespace-nowrap"><span className="eyebrow">Mwangaza News Brief</span><ArrowDown size={13} /><span className="eyebrow">Read beyond the headline</span><span className="opacity-50">◆</span><span className="eyebrow">Mwangaza News Brief</span><ArrowDown size={13} /><span className="eyebrow">Read beyond the headline</span><span className="opacity-50">◆</span></div></div>
     </main>
   );
 }
