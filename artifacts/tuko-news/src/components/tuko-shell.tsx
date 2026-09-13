@@ -1,5 +1,5 @@
-import { Bookmark, Menu, Search, X } from 'lucide-react';
-import { useState } from 'react';
+import { Bookmark, Download, Menu, Search, X } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'wouter';
 
 const categories = [
@@ -12,6 +12,11 @@ const categories = [
   ['technology', 'Technology'],
   ['videos', 'Videos'],
 ] as const;
+
+type InstallPromptEvent = Event & {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
+};
 
 function MwangazaBrand() {
   return (
@@ -28,6 +33,23 @@ export function TukoShell({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [search, setSearch] = useState('');
+  const [installPrompt, setInstallPrompt] = useState<InstallPromptEvent | null>(null);
+
+  useEffect(() => {
+    const captureInstallPrompt = (event: Event) => {
+      event.preventDefault();
+      setInstallPrompt(event as InstallPromptEvent);
+    };
+    window.addEventListener('beforeinstallprompt', captureInstallPrompt);
+    return () => window.removeEventListener('beforeinstallprompt', captureInstallPrompt);
+  }, []);
+
+  async function installApp() {
+    if (!installPrompt) return;
+    await installPrompt.prompt();
+    await installPrompt.userChoice;
+    setInstallPrompt(null);
+  }
 
   function submitSearch(event: React.FormEvent) {
     event.preventDefault();
@@ -79,6 +101,7 @@ export function TukoShell({ children }: { children: React.ReactNode }) {
                 </Link>
               );
             })}
+            {installPrompt && <button type="button" onClick={installApp} className="ml-auto inline-flex shrink-0 items-center gap-1.5 rounded-full bg-[hsl(var(--primary))] px-3 py-1.5 text-xs font-bold text-[hsl(var(--primary-foreground))] md:px-3 md:py-1" data-testid="button-install-app"><Download size={13} /> Install app</button>}
           </div>
         </nav>
       </header>
@@ -88,6 +111,7 @@ export function TukoShell({ children }: { children: React.ReactNode }) {
           <div>
             <div className="brand-mark text-4xl"><MwangazaBrand /></div>
             <p className="mt-3 max-w-xs text-sm text-[hsl(var(--secondary-foreground)/.68)]">Mwangaza News Brief for Kenya, the continent, and a curious world.</p>
+            <p className="mt-3 text-xs text-[hsl(var(--secondary-foreground)/.52)]">Add it to your phone from your browser menu for one-tap access.</p>
           </div>
           <div className="text-right">
             <p className="eyebrow text-[hsl(var(--accent))]">Independent reading</p>
