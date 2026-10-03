@@ -74,6 +74,19 @@ export function TukoShell({ children }: { children: React.ReactNode }) {
             <Link href="/?saved=1" className="hidden items-center gap-2 rounded-full px-3 py-2 text-xs font-semibold text-[hsl(var(--muted-foreground))] transition-colors hover:bg-[hsl(var(--muted))] hover:text-[hsl(var(--foreground))] sm:flex" data-testid="link-saved">
               <Bookmark size={16} /> Saved
             </Link>
+            {installPrompt && (
+              <button
+                type="button"
+                onClick={installApp}
+                aria-label="Install Mwangaza Wire"
+                title="Install Mwangaza Wire"
+                className="inline-flex items-center gap-1.5 rounded-full bg-[hsl(var(--primary))] px-2.5 py-2 text-xs font-bold text-[hsl(var(--primary-foreground))] sm:px-3"
+                data-testid="button-install-app"
+              >
+                <Download size={15} />
+                <span className="hidden sm:inline">Install app</span>
+              </button>
+            )}
             <button type="button" aria-label="Search stories" onClick={() => setSearchOpen((open) => !open)} className="rounded-full p-2.5 transition-colors hover:bg-[hsl(var(--muted))]" data-testid="button-toggle-search">
               <Search size={19} strokeWidth={1.8} />
             </button>
@@ -101,7 +114,6 @@ export function TukoShell({ children }: { children: React.ReactNode }) {
                 </Link>
               );
             })}
-            {installPrompt && <button type="button" onClick={installApp} className="ml-auto inline-flex shrink-0 items-center gap-1.5 rounded-full bg-[hsl(var(--primary))] px-3 py-1.5 text-xs font-bold text-[hsl(var(--primary-foreground))] md:px-3 md:py-1" data-testid="button-install-app"><Download size={13} /> Install app</button>}
           </div>
         </nav>
       </header>

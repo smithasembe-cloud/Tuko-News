@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mwangaza-wire-shell-v1';
+const CACHE_NAME = 'mwangaza-wire-shell-v2';
 
 self.addEventListener('install', () => self.skipWaiting());
 
