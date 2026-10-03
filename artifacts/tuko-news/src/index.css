@@ -133,8 +133,16 @@
 .story-image { transition: transform .65s cubic-bezier(.2,.75,.25,1), filter .35s ease; }
 .story-card:hover .story-image { transform: scale(1.045); filter: saturate(1.1); }
 .image-placeholder { background: linear-gradient(135deg, hsl(var(--secondary)), hsl(184 39% 20%)); position: relative; overflow: hidden; }
-.image-placeholder::after { content: 'MWANGAZA / REPORTING'; position: absolute; right: 1rem; bottom: 1rem; color: hsl(var(--accent) / .85); font: 700 .6rem var(--app-font-mono); letter-spacing: .14em; transform: rotate(-90deg) translateX(100%); transform-origin: right bottom; }
+.image-placeholder::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, transparent 72%, hsl(var(--secondary) / .28)); pointer-events: none; }
 .image-placeholder::before { content: ''; position: absolute; width: 14rem; height: 14rem; border: 1px solid hsl(var(--accent) / .38); border-radius: 50%; left: -3rem; top: -4rem; box-shadow: 4rem 3rem 0 -1px hsl(var(--accent) / .09), 8rem 6rem 0 -2px hsl(var(--accent) / .08); }
+.fallback-copy { position: absolute; z-index: 1; inset: 0; display: flex; flex-direction: column; justify-content: flex-end; gap: .8rem; padding: clamp(1rem, 4vw, 2rem); color: hsl(var(--background)); }
+.fallback-kicker, .fallback-source { font: 700 .62rem var(--app-font-mono); letter-spacing: .12em; text-transform: uppercase; color: hsl(var(--accent)); }
+.fallback-title { display: -webkit-box; max-width: 25ch; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 3; font: 400 clamp(1.55rem, 3.8vw, 3rem)/.98 var(--app-font-serif); letter-spacing: -.025em; text-wrap: balance; }
+.fallback-source { color: hsl(var(--background) / .68); font-size: .56rem; }
+.offline-strip { display: flex; align-items: center; justify-content: center; gap: .55rem; padding: .55rem 1rem; color: hsl(var(--secondary-foreground)); background: hsl(var(--secondary)); font-size: .76rem; font-weight: 600; }
+button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid hsl(var(--primary) / .7); outline-offset: 3px; }
+.story-card:focus-within { border-color: hsl(var(--primary) / .7); }
+.ad-slot[hidden] { display: none; }
 .reveal { animation: reveal .7s both cubic-bezier(.2,.75,.25,1); }
 .reveal-1 { animation-delay: .08s; }
 .reveal-2 { animation-delay: .16s; }
@@ -151,7 +159,6 @@
 .media-video { display: block; width: 100%; max-height: min(72vh, 720px); background: #071b22; }
 .video-badge { color: hsl(var(--accent-foreground)); background: hsl(var(--secondary) / .86); backdrop-filter: blur(12px); }
 .reading-copy { text-wrap: pretty; }
-.reading-copy p:first-of-type::first-letter { float: left; margin: .12em .12em 0 0; font-family: var(--app-font-serif); font-size: 4.3em; line-height: .72; color: hsl(var(--primary)); }
 @media (max-width: 420px) { .brand-lockup { column-gap: .34rem; } .brand-time { font-size: .33em; } .brand-news { font-size: .37em; } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: .01ms !important; } }
 @media (min-width: 768px) { .tuko-container { width: min(100% - 4rem, 1240px); } }

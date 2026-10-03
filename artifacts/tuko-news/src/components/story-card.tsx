@@ -1,6 +1,6 @@
 import { ArrowUpRight, Bookmark, Play } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { Link } from 'wouter';
+import { Link, useLocation } from 'wouter';
 import type { NewsArticle } from '@workspace/api-client-react';
 
 const categoryLabels: Record<NewsArticle['category'], string> = {
@@ -33,11 +33,28 @@ export function toggleSaved(id: string) {
   } catch { return false; }
 }
 
-export function StoryImage({ article, className = '' }: { article: NewsArticle; className?: string }) {
+export function rememberFeedPosition(location: string, articleId: string) {
+  try {
+    sessionStorage.setItem(`mwangaza-story-origin:${articleId}`, JSON.stringify({
+      location,
+      scrollY: window.scrollY,
+    }));
+  } catch { /* storage may be unavailable */ }
+}
+
+export function StoryImage({ article, className = '', eager = false }: { article: NewsArticle; className?: string; eager?: boolean }) {
   const [failed, setFailed] = useState(!article.imageUrl);
   useEffect(() => setFailed(!article.imageUrl), [article.imageUrl]);
-  if (failed || !article.imageUrl) return <div className={`image-placeholder h-full w-full ${className}`} aria-label="Editorial image unavailable" />;
-  return <img src={article.imageUrl} alt="" onError={() => setFailed(true)} className={`story-image h-full w-full object-cover ${className}`} />;
+  if (failed || !article.imageUrl) return (
+    <div className={`image-placeholder h-full w-full ${className}`} role="img" aria-label={`Mwangaza Wire text artwork: ${article.title}`}>
+      <div className="fallback-copy">
+        <span className="fallback-kicker">{categoryLabels[article.category]} / Mwangaza Wire</span>
+        <span className="fallback-title">{article.title}</span>
+        <span className="fallback-source">{article.source}</span>
+      </div>
+    </div>
+  );
+  return <img src={article.imageUrl} alt={`${article.title} — publisher image`} loading={eager ? 'eager' : 'lazy'} decoding="async" onError={() => setFailed(true)} className={`story-image h-full w-full object-cover ${className}`} />;
 }
 
 export function StoryMeta({ article, light = false }: { article: NewsArticle; light?: boolean }) {
@@ -53,11 +70,12 @@ export function StoryMeta({ article, light = false }: { article: NewsArticle; li
 }
 
 export function StoryCard({ article, compact = false, index = 0 }: { article: NewsArticle; compact?: boolean; index?: number }) {
+  const [location] = useLocation();
   const [saved, setSaved] = useState(() => isSaved(article.id));
   const saveStory = () => setSaved(toggleSaved(article.id));
   return (
     <article className={`story-card reveal reveal-${Math.min(index + 1, 4)} group relative overflow-hidden rounded-[1.1rem] border border-[hsl(var(--border))] bg-[hsl(var(--card))] ${compact ? 'flex gap-4 p-3' : ''}`} data-testid={`card-story-${article.id}`}>
-      <Link href={`/article/${article.id}`} className={compact ? 'contents' : 'block'} data-testid={`link-story-${article.id}`}>
+      <Link href={`/article/${article.id}`} onClick={() => rememberFeedPosition(location, article.id)} className={compact ? 'contents' : 'block'} data-testid={`link-story-${article.id}`}>
         <div className={compact ? 'h-24 w-28 shrink-0 overflow-hidden rounded-lg' : 'relative aspect-[4/3] overflow-hidden'}>
           <StoryImage article={article} />
           {article.videoUrl && <span className="video-badge absolute bottom-3 left-3 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-[.65rem] font-bold"><Play size={11} fill="currentColor" /> Video</span>}

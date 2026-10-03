@@ -1,4 +1,4 @@
-import { Bookmark, Download, Menu, Search, X } from 'lucide-react';
+import { Bookmark, Download, Menu, Search, X, WifiOff } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'wouter';
 
@@ -34,6 +34,7 @@ export function TukoShell({ children }: { children: React.ReactNode }) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [installPrompt, setInstallPrompt] = useState<InstallPromptEvent | null>(null);
+  const [online, setOnline] = useState(() => typeof navigator === 'undefined' || navigator.onLine);
 
   useEffect(() => {
     const captureInstallPrompt = (event: Event) => {
@@ -43,6 +44,21 @@ export function TukoShell({ children }: { children: React.ReactNode }) {
     window.addEventListener('beforeinstallprompt', captureInstallPrompt);
     return () => window.removeEventListener('beforeinstallprompt', captureInstallPrompt);
   }, []);
+
+  useEffect(() => {
+    const update = () => setOnline(navigator.onLine);
+    window.addEventListener('online', update);
+    window.addEventListener('offline', update);
+    return () => {
+      window.removeEventListener('online', update);
+      window.removeEventListener('offline', update);
+    };
+  }, []);
+
+  useEffect(() => {
+    const query = new URLSearchParams(location.split('?')[1] || '');
+    setSearch(query.get('q') || '');
+  }, [location]);
 
   async function installApp() {
     if (!installPrompt) return;
@@ -54,7 +70,10 @@ export function TukoShell({ children }: { children: React.ReactNode }) {
   function submitSearch(event: React.FormEvent) {
     event.preventDefault();
     const query = search.trim();
-    if (query) setLocation(`/?q=${encodeURIComponent(query)}`);
+    const params = new URLSearchParams(location.split('?')[1] || '');
+    if (query) params.set('q', query);
+    else params.delete('q');
+    setLocation(params.size ? `/?${params.toString()}` : '/');
     setSearchOpen(false);
   }
 
@@ -65,14 +84,14 @@ export function TukoShell({ children }: { children: React.ReactNode }) {
           <Link href="/" className="brand-mark text-[2rem] text-[hsl(var(--foreground))]" data-testid="link-home">
             <MwangazaBrand />
           </Link>
-          <div className="hidden items-center gap-2 md:flex">
-            <span className="live-dot" aria-hidden="true" />
-            <span className="eyebrow text-[hsl(var(--primary))]">Live desk</span>
-            <span className="text-xs text-[hsl(var(--muted-foreground))]">Nairobi · East Africa</span>
+          <div className="flex items-center gap-2" role="status" aria-label={online ? 'Online, live desk in Nairobi' : 'Offline'}>
+            {online ? <span className="live-dot" aria-hidden="true" /> : <WifiOff size={14} aria-hidden="true" />}
+            <span className="eyebrow hidden text-[hsl(var(--primary))] sm:inline">{online ? 'Live desk' : 'Offline'}</span>
+            <span className="hidden text-xs text-[hsl(var(--muted-foreground))] md:inline">Nairobi · East Africa</span>
           </div>
           <div className="flex items-center gap-1">
-            <Link href="/?saved=1" className="hidden items-center gap-2 rounded-full px-3 py-2 text-xs font-semibold text-[hsl(var(--muted-foreground))] transition-colors hover:bg-[hsl(var(--muted))] hover:text-[hsl(var(--foreground))] sm:flex" data-testid="link-saved">
-              <Bookmark size={16} /> Saved
+            <Link href="/?saved=1" className="inline-flex items-center gap-2 rounded-full px-2.5 py-2 text-xs font-semibold text-[hsl(var(--muted-foreground))] transition-colors hover:bg-[hsl(var(--muted))] hover:text-[hsl(var(--foreground))] sm:px-3" data-testid="link-saved">
+              <Bookmark size={16} /><span className="hidden sm:inline">Saved</span>
             </Link>
             {installPrompt && (
               <button
@@ -117,6 +136,7 @@ export function TukoShell({ children }: { children: React.ReactNode }) {
           </div>
         </nav>
       </header>
+      {!online && <div className="offline-strip" role="status" data-testid="status-offline"><WifiOff size={14} /> You’re offline. Showing the latest edition available on this device.</div>}
       {children}
       <footer className="mt-24 border-t border-[hsl(var(--border))] bg-[hsl(var(--secondary))] text-[hsl(var(--secondary-foreground))]">
         <div className="tuko-container flex flex-col gap-8 py-10 sm:flex-row sm:items-end sm:justify-between">

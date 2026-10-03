@@ -3,8 +3,10 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation } from 'wouter';
 import { getGetNewsQueryKey, getGetTrendingNewsQueryKey, useGetNews, useGetTrendingNews, type NewsArticle, type GetNewsParams } from '@workspace/api-client-react';
 import { useQueryClient } from '@tanstack/react-query';
-import { StoryCard, StoryImage, StoryMeta, formatTime, isSaved, toggleSaved } from '@/components/story-card';
+import { StoryCard, StoryImage, StoryMeta, formatTime, isSaved, toggleSaved, rememberFeedPosition } from '@/components/story-card';
+import { cacheEditionForOffline } from '@/components/offline-cache';
 import { Seo } from '@/components/seo';
+import { AdSlot } from '@/components/ad-slot';
 
 function SkeletonHome() {
   return <main className="tuko-container py-10"><div className="skeleton h-5 w-32 rounded" /><div className="mt-6 grid gap-5 md:grid-cols-[1.35fr_.65fr]"><div className="skeleton h-[390px] rounded-2xl" /><div className="space-y-5"><div className="skeleton h-44 rounded-2xl" /><div className="skeleton h-44 rounded-2xl" /></div></div><div className="mt-12 grid gap-5 sm:grid-cols-3"><div className="skeleton h-52 rounded-2xl" /><div className="skeleton h-52 rounded-2xl" /><div className="skeleton h-52 rounded-2xl" /></div></main>;
@@ -31,7 +33,8 @@ export default function Home() {
   const savedOnly = query.get('saved') === '1';
   const queryClient = useQueryClient();
   const [savedVersion, setSavedVersion] = useState(0);
-  const params = useMemo(() => ({ category: category || 'all', limit: 250 }) satisfies GetNewsParams, [category]);
+  // One unfiltered cache entry is shared with article pages, including offline reads.
+  const params = useMemo(() => ({ limit: 250 }) satisfies GetNewsParams, []);
   const feedQuery = useGetNews(params, {
     query: { queryKey: getGetNewsQueryKey(params), refetchInterval: 3_600_000, refetchOnWindowFocus: true },
   });
@@ -45,10 +48,14 @@ export default function Home() {
   }, []);
   const [visibleCount, setVisibleCount] = useState(14);
   const feed = feedQuery.data;
+  useEffect(() => {
+    if (feed) cacheEditionForOffline(feed);
+  }, [feed]);
   const filtered = useMemo(() => (feed?.articles || []).filter((article) => {
     const matchesSearch = !search || `${article.title} ${article.excerpt} ${article.source}`.toLowerCase().includes(search);
-     return matchesSearch && (!savedOnly || isSaved(article.id)) && (!videoOnly || Boolean(article.videoUrl));
-  }), [feed, search, savedOnly, savedVersion, videoOnly]);
+     const matchesCategory = !category || article.category === category;
+      return matchesCategory && matchesSearch && (!savedOnly || isSaved(article.id)) && (!videoOnly || Boolean(article.videoUrl));
+  }), [feed, category, search, savedOnly, savedVersion, videoOnly]);
   useEffect(() => setVisibleCount(14), [category, search, savedOnly, videoOnly]);
   useEffect(() => {
     if (!feedQuery.isSuccess) return;
@@ -79,6 +86,7 @@ export default function Home() {
     return () => observer.disconnect();
   }, [filtered.length]);
   const featured = filtered.find((article) => article.isFeatured) || filtered[0];
+  const featuredSaved = featured ? isSaved(featured.id) : false;
   const rest = filtered.filter((article) => article.id !== featured?.id);
   const refresh = () => {
     queryClient.invalidateQueries({ queryKey: getGetNewsQueryKey(params) });
@@ -99,13 +107,13 @@ export default function Home() {
          {!filtered.length ? <div className="mt-10"><EmptyState saved={savedOnly} videoOnly={videoOnly} /></div> : (
           <>
             <div className="mt-8 grid gap-5 md:grid-cols-[1.35fr_.65fr]">
-              {featured && <article className="story-card reveal reveal-1 group relative min-h-[390px] overflow-hidden rounded-[1.2rem] bg-[hsl(var(--secondary))]" data-testid={`card-featured-${featured.id}`}><Link href={`/article/${featured.id}`} className="absolute inset-0" data-testid={`link-featured-${featured.id}`}><StoryImage article={featured} className="opacity-80 mix-blend-luminosity transition-opacity group-hover:opacity-95" /><div className="absolute inset-0 bg-gradient-to-t from-[hsl(var(--secondary))] via-[hsl(var(--secondary)/.28)] to-transparent" /><div className="absolute inset-x-0 bottom-0 p-6 text-[hsl(var(--background))] sm:p-8"><StoryMeta article={featured} light /><h2 className="mt-3 max-w-2xl font-serif text-[clamp(2.2rem,5vw,4.2rem)] leading-[.91] tracking-[-.025em]">{featured.title}</h2><p className="mt-4 line-clamp-4 max-w-xl text-sm leading-relaxed text-[hsl(var(--background)/.76)]">{featured.excerpt}</p><span className="mt-6 inline-flex items-center gap-2 text-xs font-bold text-[hsl(var(--accent))]">Open the full story <ArrowUpRight size={15} /></span></div></Link><button type="button" onClick={() => toggleSaved(featured.id)} aria-label={`Save ${featured.title}`} className="absolute right-5 top-5 rounded-full bg-[hsl(var(--secondary)/.65)] p-3 text-[hsl(var(--background))] backdrop-blur transition-colors hover:bg-[hsl(var(--primary))]" data-testid={`button-save-featured-${featured.id}`}><Bookmark size={17} /></button></article>}
-              <div className="flex flex-col gap-5">{rest.slice(0, 2).map((article, index) => <StoryCard article={article} key={article.id} index={index + 1} />)}</div>
+               {featured && <article className="story-card reveal reveal-1 group relative min-h-[390px] overflow-hidden rounded-[1.2rem] bg-[hsl(var(--secondary))]" data-testid={`card-featured-${featured.id}`}><Link href={`/article/${featured.id}`} onClick={() => rememberFeedPosition(location, featured.id)} className="absolute inset-0" data-testid={`link-featured-${featured.id}`}><StoryImage article={featured} eager className="opacity-80 transition-opacity group-hover:opacity-95" /><div className="absolute inset-0 bg-gradient-to-t from-[hsl(var(--secondary))] via-[hsl(var(--secondary)/.28)] to-transparent" /><div className="absolute inset-x-0 bottom-0 p-6 text-[hsl(var(--background))] sm:p-8"><StoryMeta article={featured} light /><h2 className="mt-3 max-w-2xl font-serif text-[clamp(2.2rem,5vw,4.2rem)] leading-[.91] tracking-[-.025em]">{featured.title}</h2><p className="mt-4 line-clamp-4 max-w-xl text-sm leading-relaxed text-[hsl(var(--background)/.76)]">{featured.excerpt}</p><span className="mt-6 inline-flex items-center gap-2 text-xs font-bold text-[hsl(var(--accent))]">Publisher excerpt <ArrowUpRight size={15} /></span></div></Link><button type="button" onClick={() => toggleSaved(featured.id)} aria-pressed={featuredSaved} aria-label={`${featuredSaved ? 'Unsave' : 'Save'} ${featured.title}`} className="absolute right-5 top-5 rounded-full bg-[hsl(var(--secondary)/.65)] p-3 text-[hsl(var(--background))] backdrop-blur transition-colors hover:bg-[hsl(var(--primary))]" data-testid={`button-save-featured-${featured.id}`}><Bookmark size={17} fill={featuredSaved ? 'currentColor' : 'none'} /></button></article>}
+               <div className="flex flex-col gap-5">{rest.slice(0, 2).map((article, index) => <StoryCard article={article} key={article.id} index={index + 1} />)}</div>
             </div>
             <div className="mt-14 grid gap-12 lg:grid-cols-[1fr_320px]">
-              <section><div className="mb-5 flex items-center justify-between border-b border-[hsl(var(--foreground))] pb-3"><h2 className="eyebrow">Latest from the desk</h2><span className="text-xs text-[hsl(var(--muted-foreground))]">{filtered.length} live stories</span></div><div className="grid gap-5 sm:grid-cols-2">{rest.slice(2, visibleCount).map((article, index) => <StoryCard article={article} key={article.id} index={index % 4} />)}</div><div className="h-8" data-testid="feed-sentinel" aria-hidden="true" /></section>
-              <aside><div className="mb-5 flex items-center gap-2 border-b border-[hsl(var(--foreground))] pb-3"><TrendingUp size={17} className="text-[hsl(var(--primary))]" /><h2 className="eyebrow">What readers are following</h2></div><div className="divide-y divide-[hsl(var(--border))]">{trendingQuery.isLoading ? [1, 2, 3].map((item) => <div key={item} className="skeleton my-4 h-20 rounded-lg" />) : (trendingQuery.data || []).slice(0, 5).map((article, index) => <Link href={`/article/${article.id}`} key={article.id} className="group flex gap-4 py-4" data-testid={`link-trending-${article.id}`}><span className="font-serif text-3xl leading-none text-[hsl(var(--primary)/.5)]">0{index + 1}</span><div><p className="text-sm font-semibold leading-snug transition-colors group-hover:text-[hsl(var(--primary))]">{article.title}</p><p className="mt-2 text-[.68rem] text-[hsl(var(--muted-foreground))]">{article.source} · {formatTime(article.publishedAt)}</p></div><ChevronRight size={15} className="ml-auto mt-1 shrink-0 text-[hsl(var(--muted-foreground))]" /></Link>)}</div></aside>
-            </div>
+               <section><div className="mb-5 flex items-center justify-between border-b border-[hsl(var(--foreground))] pb-3"><h2 className="eyebrow">Latest from the desk</h2><span className="text-xs text-[hsl(var(--muted-foreground))]">{filtered.length} live stories</span></div><div className="grid gap-5 sm:grid-cols-2">{rest.slice(2, visibleCount).map((article, index) => <StoryCard article={article} key={article.id} index={index % 4} />)}</div><AdSlot placement="feed-inline" /><div className="h-8" data-testid="feed-sentinel" aria-hidden="true" /></section>
+               <aside><div className="mb-5 flex items-center gap-2 border-b border-[hsl(var(--foreground))] pb-3"><TrendingUp size={17} className="text-[hsl(var(--primary))]" /><h2 className="eyebrow">What readers are following</h2></div><div className="divide-y divide-[hsl(var(--border))]">{trendingQuery.isLoading ? [1, 2, 3].map((item) => <div key={item} className="skeleton my-4 h-20 rounded-lg" />) : (trendingQuery.data || []).slice(0, 5).map((article, index) => <Link href={`/article/${article.id}`} onClick={() => rememberFeedPosition(location, article.id)} key={article.id} className="group flex gap-4 py-4" data-testid={`link-trending-${article.id}`}><span className="font-serif text-3xl leading-none text-[hsl(var(--primary)/.5)]">0{index + 1}</span><div><p className="text-sm font-semibold leading-snug transition-colors group-hover:text-[hsl(var(--primary))]">{article.title}</p><p className="mt-2 text-[.68rem] text-[hsl(var(--muted-foreground))]">{article.source} · {formatTime(article.publishedAt)}</p></div><ChevronRight size={15} className="ml-auto mt-1 shrink-0 text-[hsl(var(--muted-foreground))]" /></Link>)}</div></aside>
+             </div>
           </>
         )}
       </section>
