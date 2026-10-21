@@ -1,7 +1,5 @@
 import { useEffect } from 'react';
 
-const productionUrl = 'https://tuko-news--viber8556.replit.app';
-
 function setMeta(attribute: 'name' | 'property', key: string, content: string) {
   let element = document.head.querySelector<HTMLMetaElement>(`meta[${attribute}="${key}"]`);
   if (!element) {
@@ -14,7 +12,7 @@ function setMeta(attribute: 'name' | 'property', key: string, content: string) {
 
 export function Seo({ title, description, path, type = 'website' }: { title: string; description: string; path: string; type?: string }) {
   useEffect(() => {
-    const url = `${productionUrl}${path}`;
+    const url = new URL(path, window.location.origin).toString();
     document.title = title;
     setMeta('name', 'description', description);
     setMeta('property', 'og:title', title);

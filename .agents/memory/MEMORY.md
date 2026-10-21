@@ -1,1 +1,2 @@
 - [OpenAPI validator compatibility](openapi-zod-compatibility.md) — keep generated schemas compatible with the workspace's current Zod version.
+- [pnpm workspace annotations](pnpm-workspace-annotations.md) — review workspace YAML after pnpm updates because serialization can drop comments.

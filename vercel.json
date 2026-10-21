@@ -1,0 +1,7 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "installCommand": "pnpm install --frozen-lockfile",
+  "buildCommand": "pnpm run typecheck && pnpm --filter @workspace/tuko-news run build && pnpm --filter @workspace/api-server run build",
+  "outputDirectory": "artifacts/tuko-news/dist/public",
+  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+}

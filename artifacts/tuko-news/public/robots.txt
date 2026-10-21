@@ -1,3 +1,2 @@
 User-agent: *
 Allow: /
-Sitemap: https://tuko-news--viber8556.replit.app/sitemap.xml
