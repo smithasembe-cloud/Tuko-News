@@ -1,5 +1,5 @@
 import { ArrowLeft, Bookmark, Check, Copy, ExternalLink, Play, Share2, Sparkles } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { Link, useLocation, useParams } from 'wouter';
 import { useGetNews, useSummarizeNews } from '@workspace/api-client-react';
 import { StoryCard, StoryImage, StoryMeta, formatTime, isSaved, toggleSaved } from '@/components/story-card';
@@ -45,6 +45,9 @@ export default function ArticlePage() {
   const article = useMemo(() => feedQuery.data?.articles.find((item) => item.id === id), [feedQuery.data, id]);
   const related = useMemo(() => article ? feedQuery.data?.articles.filter((item) => item.id !== id && item.category === article.category).slice(0, 3) || [] : [], [feedQuery.data, article, id]);
   const summaryMutation = useSummarizeNews();
+  useLayoutEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+  }, [id]);
   const share = async () => {
     const url = window.location.href;
     try { if (navigator.share) await navigator.share({ title: article?.title || 'Mwangaza Wire', url }); else { await navigator.clipboard.writeText(url); setShared(true); window.setTimeout(() => setShared(false), 2200); } } catch { /* share dialog dismissed */ }
@@ -75,7 +78,7 @@ export default function ArticlePage() {
           sessionStorage.removeItem(`mwangaza-story-origin:${id}`);
         } catch { /* use edition */ }
         setLocation(destination);
-        requestAnimationFrame(() => requestAnimationFrame(() => window.scrollTo(0, scrollY)));
+        requestAnimationFrame(() => requestAnimationFrame(() => window.scrollTo({ top: scrollY, left: 0, behavior: 'instant' })));
       }} className="inline-flex items-center gap-2 text-sm font-bold text-[hsl(var(--muted-foreground))] transition-colors hover:text-[hsl(var(--primary))]" data-testid="button-back-to-feed"><ArrowLeft size={17} /> Back to edition</button><span className="eyebrow text-[hsl(var(--primary))]">Mwangaza News Brief</span></div>
       <article className="mx-auto mt-9 max-w-[1080px]">
         <div className="max-w-4xl reveal"><StoryMeta article={article} /><h1 className="mt-5 font-serif text-[clamp(3rem,7vw,6.8rem)] leading-[.86] tracking-[-.045em] text-balance">{article.title}</h1></div>

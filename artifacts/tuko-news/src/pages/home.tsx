@@ -64,7 +64,7 @@ export default function Home() {
     setVisibleCount((count) => Math.min(filtered.length, Math.max(count, Math.max(14, Math.ceil(targetPosition / 260) * 2))));
     let secondFrame = 0;
     const frame = requestAnimationFrame(() => {
-      secondFrame = requestAnimationFrame(() => window.scrollTo(0, targetPosition));
+      secondFrame = requestAnimationFrame(() => window.scrollTo({ top: targetPosition, left: 0, behavior: 'instant' }));
     });
     return () => {
       cancelAnimationFrame(frame);
