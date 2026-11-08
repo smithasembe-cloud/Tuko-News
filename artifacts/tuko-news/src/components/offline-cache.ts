@@ -15,7 +15,8 @@ function sendToServiceWorker(message: OfflineCacheMessage) {
 }
 
 export function cacheEditionForOffline(feed: NewsFeed) {
-  const imageUrls = feed.articles
+  const articles = Array.isArray(feed?.articles) ? feed.articles : [];
+  const imageUrls = articles
     .slice(0, 12)
     .map((article: NewsArticle) => article.imageUrl)
     .filter((url): url is string => Boolean(url));
